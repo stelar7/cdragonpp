@@ -1,69 +1,83 @@
 #pragma once
-#include <list>
 #include <vector>
 #include <cstddef>
+#include <variant>
 
-namespace wad {
+namespace cdragon {
+	namespace wad {
 
-	enum WADCompressionType {
-		NONE = 0,
-		GZIP = 1,
-		REFERENCE = 2,
-		ZSTD = 3
-	};
+		enum WADCompressionType {
+			NONE = 0,
+			GZIP = 1,
+			REFERENCE = 2,
+			ZSTD = 3
+		};
 
-	class WADHeader {
-		std::vector<std::byte> magic;
-		std::byte major;
-		std::byte minor;
-
-		union version {
+		class WADHeader {
+		public:
 			struct v1 {
-				short entryOffset;
-				short entryCellSize;
-				int entryCount;
+				std::int16_t entryOffset;
+				std::int16_t entryCellSize;
+				std::int32_t entryCount;
 			};
 
 			struct v2 {
-				std::byte ECDSALength;
+				std::int8_t ECDSALength;
 				std::vector<std::byte> ECDSA;
 				std::vector<std::byte> ECDSAPadding;
-				long long checksum;
-				short entryOffset;
-				short entryCellSize;
-				int entryCount;
+				std::int64_t checksum;
+				std::int16_t entryOffset;
+				std::int16_t entryCellSize;
+				std::int32_t entryCount;
 			};
 
 			struct v3 {
 				std::vector<std::byte> ECDSA;
-				long long checksum;
-				int entryCount;
+				std::int64_t checksum;
+				std::int32_t entryCount;
 			};
+
+			std::byte magic[2];
+			std::int8_t major;
+			std::int8_t minor;
+			std::variant<v1, v2, v3> version;
 		};
 
-	};
-
-	class WADContentHeader {
-		union version {
-			struct v1 {
+		class WADContentHeader {
+		public:
+			class v1 {
+			public:
 				std::string pathHash;
-				int offset;
-				int compressedSize;
-				int uncompressedSize;
+				std::int32_t offset;
+				std::int32_t compressedSize;
+				std::int32_t uncompressedSize;
 				WADCompressionType compression;
 			};
 
-			struct v2 :v1 {
+			class v2 : v1 {
+			public:
+				v2(v1 old) : v1(old) {};
+
 				bool duplicate;
-				short paddding;
-				long long sha256;
+				std::int16_t paddding;
+				std::int64_t sha256;
 			};
+
+			std::variant<v1, v2> version;
 		};
-	};
 
 
-	class WADFile {
-		WADHeader header;
-		std::list<WADContentHeader> content;
-	};
+		class WADFile {
+		public:
+			WADHeader header;
+			std::vector<WADContentHeader> content;
+
+			friend std::istream& operator>>(std::istream &is, WADFile &file);
+			explicit operator bool();
+			friend bool operator!(WADFile &file);
+
+		private:
+			bool _valid = false;
+		};
+	}
 }
