@@ -37,7 +37,7 @@ namespace cdragon {
 				std::int32_t entryCount;
 			};
 
-			std::byte magic[2];
+			char magic[2];
 			std::int8_t major;
 			std::int8_t minor;
 			std::variant<v1, v2, v3> version;

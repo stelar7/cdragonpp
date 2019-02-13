@@ -5,9 +5,9 @@
 #include <sstream>
 
 using namespace cdragon::wad;
-bool cdragon::wad::operator!(WADFile & file)
+bool cdragon::wad::operator!(WADFile& file)
 {
-	return bool();
+	return !file._valid;
 }
 
 cdragon::wad::WADFile::operator bool()
@@ -20,6 +20,12 @@ std::istream& cdragon::wad::operator>>(std::istream& is, WADFile& obj)
 {
 	try {
 		is.read(reinterpret_cast<char*>(&obj.header.magic), sizeof(std::int16_t));
+
+		if (obj.header.magic[0] != 'R' || obj.header.magic[1] != 'W') {
+			throw std::exception("Invalid magic number in header");
+		}
+
+
 		is.read(reinterpret_cast<char*>(&obj.header.major), sizeof(std::int8_t));
 		is.read(reinterpret_cast<char*>(&obj.header.minor), sizeof(std::int8_t));
 
@@ -114,7 +120,7 @@ std::istream& cdragon::wad::operator>>(std::istream& is, WADFile& obj)
 		obj._valid = true;
 	}
 	catch (const std::exception& e) {
-		std::cout << e.what() << '\n';
+		std::cout << e.what() << std::endl;
 	}
 
 
