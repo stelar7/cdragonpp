@@ -15,10 +15,10 @@ cdragon::wad::WADFile::operator bool()
 	return _valid;
 }
 
+// is needs to be opened in binary mode
 std::istream& cdragon::wad::operator>>(std::istream& is, WADFile& obj)
 {
 	try {
-
 		is.read(reinterpret_cast<char*>(&obj.header.magic), sizeof(std::int16_t));
 		is.read(reinterpret_cast<char*>(&obj.header.major), sizeof(std::int8_t));
 		is.read(reinterpret_cast<char*>(&obj.header.minor), sizeof(std::int8_t));
@@ -39,12 +39,14 @@ std::istream& cdragon::wad::operator>>(std::istream& is, WADFile& obj)
 			WADHeader::v2 ver;
 			is.read(reinterpret_cast<char*>(&ver.ECDSALength), sizeof(std::int8_t));
 
+			// is there a better way to do this?
 			for (std::int8_t i = 0; i < ver.ECDSALength; i++) {
 				std::byte val;
 				is.read(reinterpret_cast<char*>(&val), sizeof(val));
 				ver.ECDSA.push_back(val);
 			}
 
+			// is there a better way to do this?
 			for (std::int8_t i = 0; i < (83 - ver.ECDSALength); i++) {
 				std::byte val;
 				is.read(reinterpret_cast<char*>(&val), sizeof(val));
@@ -63,6 +65,7 @@ std::istream& cdragon::wad::operator>>(std::istream& is, WADFile& obj)
 		if (obj.header.major == 3) {
 			WADHeader::v3 ver;
 
+			// is there a better way to do this?
 			for (std::int16_t i = 0; i < 256; i++) {
 				std::byte val;
 				is.read(reinterpret_cast<char*>(&val), sizeof(val));
@@ -94,7 +97,7 @@ std::istream& cdragon::wad::operator>>(std::istream& is, WADFile& obj)
 
 			// is there a better way to do this?
 			is.read(reinterpret_cast<char*>(&var.compression), (obj.header.major > 1 ? sizeof(std::int8_t) : sizeof(std::int32_t)));
-			var.compression = static_cast<WADCompressionType>(var.compression & 3);
+			var.compression = static_cast<WADCompressionType>(var.compression & 0xFF);
 
 			content.version = var;
 			if (obj.header.major > 1 && obj.header.major < 4) {
