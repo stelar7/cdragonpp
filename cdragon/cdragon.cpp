@@ -8,31 +8,31 @@ using namespace cdragon::util;
 
 int main()
 {
-	WADFile wad;
+    WADFile wad;
 
-	std::string path = "C:\\Users\\Steffen\\Downloads\\cdragon\\FiddleSticks.wad.client";
-	DragonInStream file = DragonInStream(path);
+    std::string path = "C:\\Users\\Steffen\\Downloads\\cdragon\\FiddleSticks.wad.client";
+    DragonInStream file = DragonInStream(path);
 
-	file >> wad;
-	if (wad) {
-		std::cout << path.data() << " parsed ok!" << std::endl;
-	}
-	else {
-		std::cout << path.data() << " parsed bad!" << std::endl;
-	}
+    file >> wad;
+    if (wad) {
+        std::cout << path.data() << " parsed ok!" << std::endl;
+    }
+    else {
+        std::cout << path.data() << " parsed bad!" << std::endl;
+    }
 
-	path = "C:\\Users\\Steffen\\Downloads\\cdragon\\9fbb7f50baf65f23.crid";
-	file = DragonInStream(path);
+    path = "C:\\Users\\Steffen\\Downloads\\cdragon\\9fbb7f50baf65f23.crid";
+    file = DragonInStream(path);
 
-	file >> wad;
-	if (wad) {
-		std::cout << path.data() << " parsed ok!" << std::endl;
-	}
-	else {
-		std::cout << path.data() << " parsed bad!" << std::endl;
-	}
+    file >> wad;
+    if (wad) {
+        std::cout << path.data() << " parsed ok!" << std::endl;
+    }
+    else {
+        std::cout << path.data() << " parsed bad!" << std::endl;
+    }
 
-	std::cin.get();
+    std::cin.get();
 
 }
 
