@@ -11,13 +11,10 @@ using namespace cdragon::util;
 std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
 {
     try {
-
         is >> obj.header.magic;
-
         if (obj.header.magic[0] != 'R' || obj.header.magic[1] != 'W') {
             throw std::exception("Invalid magic number in header");
         }
-
 
         is >> obj.header.major;
         is >> obj.header.minor;
@@ -26,9 +23,9 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
 
         if (obj.header.major == 1) {
             WADHeader::v1 ver;
-            is.readObj(ver.entryOffset);
-            is.readObj(ver.entryCellSize);
-            is.readObj(ver.entryCount);
+            is >> ver.entryOffset;
+            is >> ver.entryCellSize;
+            is >> ver.entryCount;
             obj.header.version = ver;
 
             fileCount = ver.entryCount;
@@ -36,26 +33,26 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
 
         if (obj.header.major == 2) {
             WADHeader::v2 ver;
-            is.readObj(ver.ECDSALength);
+            is >> (ver.ECDSALength);
 
             // is there a better way to do this?
             for (std::int8_t i = 0; i < ver.ECDSALength; i++) {
                 std::byte val;
-                is.readObj(val, sizeof(val));
+                is >> val;
                 ver.ECDSA.push_back(val);
             }
 
             // is there a better way to do this?
             for (std::int8_t i = 0; i < (83 - ver.ECDSALength); i++) {
                 std::byte val;
-                is.readObj(val, sizeof(val));
+                is >> val;
                 ver.ECDSAPadding.push_back(val);
             }
 
-            is.readObj(ver.checksum);
-            is.readObj(ver.entryOffset);
-            is.readObj(ver.entryCellSize);
-            is.readObj(ver.entryCount);
+            is >> ver.checksum;
+            is >> ver.entryOffset;
+            is >> ver.entryCellSize;
+            is >> ver.entryCount;
             obj.header.version = ver;
 
             fileCount = ver.entryCount;
@@ -67,11 +64,11 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
             // is there a better way to do this?
             for (std::int8_t i = 0; i < 256; i++) {
                 std::byte val;
-                is.readObj(val, sizeof(val));
+                is >> val;
                 ver.ECDSA.push_back(val);
             }
-            is.readObj(ver.checksum);
-            is.readObj(ver.entryCount);
+            is >> ver.checksum;
+            is >> ver.entryCount;
             obj.header.version = ver;
 
             fileCount = ver.entryCount;
@@ -82,10 +79,10 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
             WADContentHeader content;
             WADContentHeader::v1 var;
 
-            is.readObj(var.pathHash);
-            is.readObj(var.offset);
-            is.readObj(var.compressedSize);
-            is.readObj(var.uncompressedSize);
+            is >> var.pathHash;
+            is >> var.offset;
+            is >> var.compressedSize;
+            is >> var.uncompressedSize;
 
             // is there a better way to do this?
             is.readObj(var.compression, (obj.header.major > 1 ? sizeof(std::int8_t) : sizeof(std::int32_t)));
@@ -94,9 +91,9 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
             content.version = var;
             if (obj.header.major > 1 && obj.header.major < 4) {
                 WADContentHeader::v2 var2(var);
-                is.readObj(var2.duplicate);
-                is.readObj(var2.paddding);
-                is.readObj(var2.sha256);
+                is >> var2.duplicate;
+                is >> var2.paddding;
+                is >> var2.sha256;
                 content.version = var2;
             }
 
@@ -111,10 +108,10 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
 
 
     if (!obj) {
-        is.setstate(std::ios::failbit);
+        is.ifs.setstate(std::ios::failbit);
     }
 
-    return is;
+    return is.ifs;
 }
 
 std::string cdragon::wad::WADContentHeader::v1::hashAsHex()

@@ -4,8 +4,9 @@
 namespace cdragon {
     namespace util {
 
-        class DragonInStream : public std::ifstream {
+        class DragonInStream {
         public:
+            std::ifstream ifs;
             DragonInStream(std::string path) : ifs(std::ifstream(path, std::ios::binary)) {};
 
             template<typename T>
@@ -26,8 +27,6 @@ namespace cdragon {
                 return ifs;
             }
 
-        private:
-            std::ifstream ifs;
         };
     }
 }
