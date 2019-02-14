@@ -10,20 +10,20 @@ namespace cdragon {
             DragonInStream(std::string path) : ifs(std::ifstream(path, std::ios::binary)) {};
 
             template<typename T>
-            void readObj(T& v)
+            void read(T& v)
             {
-                ifs.read(reinterpret_cast<char*>(v), sizeof(v));
+                ifs.read(reinterpret_cast<char*>(&v), sizeof(v));
             }
 
             template<typename T>
-            void readObj(T& v, std::int32_t size)
+            void read(T& v, std::int32_t size)
             {
-                ifs.read(reinterpret_cast<char*>(v), size);
+                ifs.read(reinterpret_cast<char*>(&v), size);
             }
 
             template<typename T>
-            std::ifstream& operator>>(T& file) {
-                ifs.read(reinterpret_cast<char*>(file), sizeof(file));
+            std::ifstream& operator>>(T& type) {
+                ifs.read(reinterpret_cast<char*>(&type), sizeof(type));
                 return ifs;
             }
 

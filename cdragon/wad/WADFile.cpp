@@ -1,7 +1,6 @@
 #include "WADFile.hpp"
 #include "../util/DragonStream.hpp"
 #include <iostream>
-#include <fstream>
 #include <iomanip>
 #include <sstream>
 
@@ -26,8 +25,8 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
             is >> ver.entryOffset;
             is >> ver.entryCellSize;
             is >> ver.entryCount;
-            obj.header.version = ver;
 
+            obj.header.version = ver;
             fileCount = ver.entryCount;
         }
 
@@ -53,8 +52,8 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
             is >> ver.entryOffset;
             is >> ver.entryCellSize;
             is >> ver.entryCount;
-            obj.header.version = ver;
 
+            obj.header.version = ver;
             fileCount = ver.entryCount;
         }
 
@@ -62,15 +61,15 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
             WADHeader::v3 ver;
 
             // is there a better way to do this?
-            for (std::int8_t i = 0; i < 256; i++) {
+            for (std::int16_t i = 0; i < 256; i++) {
                 std::byte val;
                 is >> val;
                 ver.ECDSA.push_back(val);
             }
             is >> ver.checksum;
             is >> ver.entryCount;
-            obj.header.version = ver;
 
+            obj.header.version = ver;
             fileCount = ver.entryCount;
         }
 
@@ -85,7 +84,7 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
             is >> var.uncompressedSize;
 
             // is there a better way to do this?
-            is.readObj(var.compression, (obj.header.major > 1 ? sizeof(std::int8_t) : sizeof(std::int32_t)));
+            is.read(var.compression, (obj.header.major > 1 ? sizeof(std::int8_t) : sizeof(std::int32_t)));
             var.compression = static_cast<WADCompressionType>(var.compression & 0xFF);
 
             content.version = var;
@@ -94,6 +93,7 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
                 is >> var2.duplicate;
                 is >> var2.paddding;
                 is >> var2.sha256;
+
                 content.version = var2;
             }
 
@@ -104,8 +104,8 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
     }
     catch (const std::exception& e) {
         std::cout << e.what() << std::endl;
+        obj._valid = false;
     }
-
 
     if (!obj) {
         is.ifs.setstate(std::ios::failbit);

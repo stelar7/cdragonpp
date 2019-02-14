@@ -1,3 +1,5 @@
 ﻿/.*
 /Debug
 /cdragon/Debug
+/cdragon/enc_temp_*
+/enc_temp_*
