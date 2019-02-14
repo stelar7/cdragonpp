@@ -1,41 +1,34 @@
 #include "WADFile.hpp"
+#include "../util/DragonStream.hpp"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
 
 using namespace cdragon::wad;
-bool cdragon::wad::operator!(WADFile& file)
-{
-	return !file._valid;
-}
+using namespace cdragon::util;
 
-cdragon::wad::WADFile::operator bool()
-{
-	return _valid;
-}
-
-// is needs to be opened in binary mode
-std::istream& cdragon::wad::operator>>(std::istream& is, WADFile& obj)
+std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
 {
 	try {
-		is.read(reinterpret_cast<char*>(&obj.header.magic), sizeof(std::int16_t));
+
+		is >> obj.header.magic;
 
 		if (obj.header.magic[0] != 'R' || obj.header.magic[1] != 'W') {
 			throw std::exception("Invalid magic number in header");
 		}
 
 
-		is.read(reinterpret_cast<char*>(&obj.header.major), sizeof(std::int8_t));
-		is.read(reinterpret_cast<char*>(&obj.header.minor), sizeof(std::int8_t));
+		is >> obj.header.major;
+		is >> obj.header.minor;
 
 		std::int32_t fileCount = -1;
 
 		if (obj.header.major == 1) {
 			WADHeader::v1 ver;
-			is.read(reinterpret_cast<char*>(&ver.entryOffset), sizeof(std::int16_t));
-			is.read(reinterpret_cast<char*>(&ver.entryCellSize), sizeof(std::int16_t));
-			is.read(reinterpret_cast<char*>(&ver.entryCount), sizeof(std::int32_t));
+			is.readObj(ver.entryOffset);
+			is.readObj(ver.entryCellSize);
+			is.readObj(ver.entryCount);
 			obj.header.version = ver;
 
 			fileCount = ver.entryCount;
@@ -43,26 +36,26 @@ std::istream& cdragon::wad::operator>>(std::istream& is, WADFile& obj)
 
 		if (obj.header.major == 2) {
 			WADHeader::v2 ver;
-			is.read(reinterpret_cast<char*>(&ver.ECDSALength), sizeof(std::int8_t));
+			is.readObj(ver.ECDSALength);
 
 			// is there a better way to do this?
 			for (std::int8_t i = 0; i < ver.ECDSALength; i++) {
 				std::byte val;
-				is.read(reinterpret_cast<char*>(&val), sizeof(val));
+				is.readObj(val, sizeof(val));
 				ver.ECDSA.push_back(val);
 			}
 
 			// is there a better way to do this?
 			for (std::int8_t i = 0; i < (83 - ver.ECDSALength); i++) {
 				std::byte val;
-				is.read(reinterpret_cast<char*>(&val), sizeof(val));
+				is.readObj(val, sizeof(val));
 				ver.ECDSAPadding.push_back(val);
 			}
 
-			is.read(reinterpret_cast<char*>(&ver.checksum), sizeof(std::int64_t));
-			is.read(reinterpret_cast<char*>(&ver.entryOffset), sizeof(std::int16_t));
-			is.read(reinterpret_cast<char*>(&ver.entryCellSize), sizeof(std::int16_t));
-			is.read(reinterpret_cast<char*>(&ver.entryCount), sizeof(std::int32_t));
+			is.readObj(ver.checksum);
+			is.readObj(ver.entryOffset);
+			is.readObj(ver.entryCellSize);
+			is.readObj(ver.entryCount);
 			obj.header.version = ver;
 
 			fileCount = ver.entryCount;
@@ -72,14 +65,13 @@ std::istream& cdragon::wad::operator>>(std::istream& is, WADFile& obj)
 			WADHeader::v3 ver;
 
 			// is there a better way to do this?
-			for (std::int16_t i = 0; i < 256; i++) {
+			for (std::int8_t i = 0; i < 256; i++) {
 				std::byte val;
-				is.read(reinterpret_cast<char*>(&val), sizeof(val));
+				is.readObj(val, sizeof(val));
 				ver.ECDSA.push_back(val);
 			}
-
-			is.read(reinterpret_cast<char*>(&ver.checksum), sizeof(std::int64_t));
-			is.read(reinterpret_cast<char*>(&ver.entryCount), sizeof(std::int32_t));
+			is.readObj(ver.checksum);
+			is.readObj(ver.entryCount);
 			obj.header.version = ver;
 
 			fileCount = ver.entryCount;
@@ -90,27 +82,21 @@ std::istream& cdragon::wad::operator>>(std::istream& is, WADFile& obj)
 			WADContentHeader content;
 			WADContentHeader::v1 var;
 
-			// is there a better way to do this?
-			std::int64_t temp;
-			std::stringstream ss;
-			is.read(reinterpret_cast<char*>(&temp), sizeof(std::int64_t));
-			ss << std::uppercase << std::setfill('0') << std::setw(16) << std::hex << temp;
-			var.pathHash = ss.str();
-
-			is.read(reinterpret_cast<char*>(&var.offset), sizeof(std::int32_t));
-			is.read(reinterpret_cast<char*>(&var.compressedSize), sizeof(std::int32_t));
-			is.read(reinterpret_cast<char*>(&var.uncompressedSize), sizeof(std::int32_t));
+			is.readObj(var.pathHash);
+			is.readObj(var.offset);
+			is.readObj(var.compressedSize);
+			is.readObj(var.uncompressedSize);
 
 			// is there a better way to do this?
-			is.read(reinterpret_cast<char*>(&var.compression), (obj.header.major > 1 ? sizeof(std::int8_t) : sizeof(std::int32_t)));
+			is.readObj(var.compression, (obj.header.major > 1 ? sizeof(std::int8_t) : sizeof(std::int32_t)));
 			var.compression = static_cast<WADCompressionType>(var.compression & 0xFF);
 
 			content.version = var;
 			if (obj.header.major > 1 && obj.header.major < 4) {
 				WADContentHeader::v2 var2(var);
-				is.read(reinterpret_cast<char*>(&var2.duplicate), sizeof(std::int8_t));
-				is.read(reinterpret_cast<char*>(&var2.paddding), sizeof(std::int16_t));
-				is.read(reinterpret_cast<char*>(&var2.sha256), sizeof(std::int64_t));
+				is.readObj(var2.duplicate);
+				is.readObj(var2.paddding);
+				is.readObj(var2.sha256);
 				content.version = var2;
 			}
 
@@ -129,4 +115,11 @@ std::istream& cdragon::wad::operator>>(std::istream& is, WADFile& obj)
 	}
 
 	return is;
+}
+
+std::string cdragon::wad::WADContentHeader::v1::hashAsHex()
+{
+	std::stringstream ss;
+	ss << std::uppercase << std::setfill('0') << std::setw(16) << std::hex << this->pathHash;
+	return ss.str();
 }

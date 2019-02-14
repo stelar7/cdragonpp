@@ -1,7 +1,9 @@
 #pragma once
 #include <vector>
+#include <array>
 #include <cstddef>
 #include <variant>
+#include "../util/DragonStream.hpp"
 
 namespace cdragon {
 	namespace wad {
@@ -47,11 +49,13 @@ namespace cdragon {
 		public:
 			class v1 {
 			public:
-				std::string pathHash;
+				std::int64_t pathHash;
 				std::int32_t offset;
 				std::int32_t compressedSize;
 				std::int32_t uncompressedSize;
 				WADCompressionType compression;
+
+				std::string hashAsHex();
 			};
 
 			class v2 : v1 {
@@ -72,9 +76,17 @@ namespace cdragon {
 			WADHeader header;
 			std::vector<WADContentHeader> content;
 
-			friend std::istream& operator>>(std::istream &is, WADFile &file);
-			explicit operator bool();
-			friend bool operator!(WADFile &file);
+			friend std::istream& operator>>(cdragon::util::DragonInStream &is, WADFile &file);
+
+			bool operator!() const
+			{
+				return !_valid;
+			}
+
+			explicit operator bool() const
+			{
+				return _valid;
+			}
 
 		private:
 			bool _valid = false;
