@@ -83,7 +83,7 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
             is >> var.compressedSize;
             is >> var.uncompressedSize;
 
-            // is there a better way to do this?
+            // is there a better way to do this? seems like there isnt (https://stackoverflow.com/questions/5633784/input-from-stream-to-enum-type)
             is.read(var.compression, (obj.header.major > 1 ? sizeof(std::int8_t) : sizeof(std::int32_t)));
             var.compression = static_cast<WADCompressionType>(var.compression & 0xFF);
 

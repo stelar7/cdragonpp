@@ -3,3 +3,6 @@
 /cdragon/Debug
 /cdragon/enc_temp_*
 /enc_temp_*
+/cdragon/x64/Debug
+/libs/curl
+/x64/Debug
