@@ -65,7 +65,7 @@ namespace cdragon {
                 ifs.seekg(pos, direction);
             }
 
-            std::int32_t pos() {
+            std::int64_t pos() {
                 return ifs.tellg();
             }
 
@@ -73,6 +73,46 @@ namespace cdragon {
             cdragon::web::Downloader getter;
             std::vector<std::filesystem::path> paths;
             std::int64_t _counter = 0;
+        };
+
+        // TODO fix this
+        template <typename CharT, typename TraitT = std::char_traits<CharT>>
+        class DragonByteStream : public std::basic_streambuf <CharT, TraitT> {
+        public:
+            DragonByteStream(std::vector<std::byte> &data)
+            {
+                this->setg(data.data(), data.data(), data.data() + data.size());
+            };
+
+            template<typename T>
+            void read(T& v)
+            {
+                this->read(reinterpret_cast<char*>(&v), sizeof(v));
+            }
+
+            template<typename T>
+            void read(T& v, std::int32_t size)
+            {
+                this->read(reinterpret_cast<char*>(&v), size);
+            }
+
+            template<typename T>
+            std::ifstream& operator>>(T& type) {
+                this->read(reinterpret_cast<char*>(&type), sizeof(type));
+                return this;
+            }
+
+            void seek(std::int32_t pos) {
+                this->seekg(pos);
+            }
+
+            void seek(std::int32_t pos, std::ios_base::seekdir direction) {
+                this->seekg(pos, direction);
+            }
+
+            std::int32_t pos() {
+                return this->tellg();
+            }
         };
     }
 }

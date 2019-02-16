@@ -21,7 +21,7 @@ namespace cdragon {
                     std::int8_t major;
                     std::int8_t minor;
                 };
-            };
+            } version;
 
             std::int8_t unknown;
             std::int8_t signatureType;
@@ -39,8 +39,8 @@ namespace cdragon {
             std::int32_t bundleListOffset;
             std::int32_t languageListOffset;
             std::int32_t fileListOffset;
-            std::int32_t FolderListOffset;
-            std::int32_t KeyHeaderOffset;
+            std::int32_t folderListOffset;
+            std::int32_t keyHeaderOffset;
             std::int32_t unknownOffset;
         };
 
@@ -87,11 +87,9 @@ namespace cdragon {
                 union data {
                     std::int32_t offset : 24;
                     std::int32_t filetype : 8;
-                };
+                } data;
                 std::int32_t offset;
-            };
-
-            std::int32_t nameOffset;
+            } nameOffset;
             std::string name;
 
             std::int32_t structSize;
@@ -110,8 +108,8 @@ namespace cdragon {
                 struct {
                     std::int32_t unknown1;
                     std::int32_t unknown2;
-                };
-            };
+                } unknowns;
+            } unknowns;
 
             bool singleChunk;
             std::vector<int64_t> chunks;
@@ -142,6 +140,7 @@ namespace cdragon {
         public:
             RMANFileHeader manifestHeader;
             RMANFileOffsetTable offsetTable;
+            std::vector<std::byte> signature;
 
             std::vector<RMANFileBundle> bundles;
             std::vector<RMANFileLanguage> languages;
