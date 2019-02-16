@@ -75,44 +75,72 @@ namespace cdragon {
             std::int64_t _counter = 0;
         };
 
-        // TODO fix this
-        template <typename CharT, typename TraitT = std::char_traits<CharT>>
-        class DragonByteStream : public std::basic_streambuf <CharT, TraitT> {
+        class membuf : public std::basic_streambuf<char> {
         public:
-            DragonByteStream(std::vector<std::byte> &data)
-            {
-                this->setg(data.data(), data.data(), data.data() + data.size());
-            };
-
-            template<typename T>
-            void read(T& v)
-            {
-                this->read(reinterpret_cast<char*>(&v), sizeof(v));
+            membuf(std::vector<std::byte> &data) {
+                this->setg((char*)data.data(), (char*)data.data(), (char*)data.data() + data.size());
             }
+
+            pos_type seekoff(off_type off, std::ios_base::seekdir dir, std::ios_base::openmode which = std::ios_base::in) override {
+                if (dir == std::ios_base::cur) {
+                    gbump(static_cast<std::int32_t>(off));
+                }
+                else if (dir == std::ios_base::end) {
+                    setg(eback(), egptr() + off, egptr());
+                }
+                else if (dir == std::ios_base::beg) {
+                    setg(eback(), eback() + off, egptr());
+                }
+
+                return gptr() - eback();
+            }
+
+            pos_type seekpos(pos_type sp, std::ios_base::openmode which) override {
+                return seekoff(sp - pos_type(off_type(0)), std::ios_base::beg, which);
+            }
+        };
+
+        class DragonByteStream : public std::istream {
+        public:
+            DragonByteStream(std::vector<std::byte> &data) : std::istream(&_buffer), _buffer(data) {
+                rdbuf(&_buffer);
+            };
 
             template<typename T>
             void read(T& v, std::int32_t size)
             {
-                this->read(reinterpret_cast<char*>(&v), size);
+                std::istream::read(reinterpret_cast<char*>(&v), size);
+                if (std::istream::fail()) {
+                    std::cout << "Failed to read stream!" << std::endl;
+                }
             }
 
             template<typename T>
-            std::ifstream& operator>>(T& type) {
-                this->read(reinterpret_cast<char*>(&type), sizeof(type));
+            void read(T& v)
+            {
+                read(v, sizeof(v));
+            }
+
+            template<typename T>
+            DragonByteStream* operator>>(T& type) {
+                read(type, sizeof(type));
                 return this;
             }
 
             void seek(std::int32_t pos) {
-                this->seekg(pos);
+                std::istream::seekg(pos, std::ios_base::beg);
             }
 
             void seek(std::int32_t pos, std::ios_base::seekdir direction) {
-                this->seekg(pos, direction);
+                std::istream::seekg(pos, direction);
             }
 
             std::int32_t pos() {
-                return this->tellg();
+                return static_cast<std::int32_t>(std::istream::tellg());
             }
+
+        private:
+            membuf _buffer;
         };
     }
 }

@@ -56,8 +56,8 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
             std::cout << ZSTD_getErrorName(err) << std::endl;
         }
 
-        DragonByteStream<std::byte> body(decompressedBytes);
 
+        DragonByteStream body(decompressedBytes);
         std::int32_t headerOffset;
         body >> headerOffset;
         body.seek(headerOffset);
@@ -116,17 +116,18 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
                 if (bundle.headerSize > 12) {
                     for (std::int16_t i = 0; i < (bundle.headerSize - 12); i++) {
                         std::byte val;
-                        is >> val;
+                        body >> val;
                         bundle.skipped.push_back(val);
                     }
                 }
 
                 std::int32_t chunkCount;
                 body >> chunkCount;
-                for (std::int32_t j = 0; j < bundleCount; j++) {
+                for (std::int32_t j = 0; j < chunkCount; j++) {
                     std::int32_t chunkOffset;
                     body >> chunkOffset;
                     std::int32_t nextChunk = body.pos();
+                    body.seek(chunkOffset - 4);
 
                     RMANFileBundleChunk chunk;
                     body >> chunk.offsetTableOffset;
@@ -161,7 +162,11 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
                 body.seek(lang.nameOffset - 4, std::ios_base::cur);
                 std::int32_t nameSize;
                 body >> nameSize;
-                body.read(lang.name, nameSize);
+                //body.read(lang.name, nameSize); this doesnt work...
+                char buff[256];
+                body.read(buff, nameSize);
+                lang.name = std::string(buff);
+                lang.name.resize(nameSize);
 
                 body.seek(nextLang);
                 obj.languages.push_back(lang);
