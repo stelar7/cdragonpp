@@ -9,7 +9,7 @@
 using namespace cdragon::util;
 using namespace cdragon::rman;
 
-std::istream& operator>>(DragonInStream& is, RMANFile& file)
+std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& file)
 {
     return is.ifs;
 }

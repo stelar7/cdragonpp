@@ -9,6 +9,18 @@
 
 using namespace cdragon::web;
 
+
+std::size_t writeString(void *ptr, std::size_t size, std::size_t nmemb, std::string* data) {
+    data->append((char*)ptr, size * nmemb);
+    return size * nmemb;
+}
+
+std::size_t writeData(void *ptr, std::size_t size, std::size_t nmemb, FILE *stream) {
+    size_t written = fwrite(ptr, size, nmemb, stream);
+    return written;
+}
+
+
 std::string cdragon::web::Downloader::downloadString(std::string url) {
     CURLcode res;
     std::string responseString;
@@ -33,7 +45,6 @@ std::string cdragon::web::Downloader::downloadString(std::string url) {
 
 
 bool cdragon::web::Downloader::downloadFile(std::string url, std::filesystem::path output) {
-    CURL* curl;
     CURLcode res;
     FILE* fp;
     bool status = true;
@@ -55,6 +66,7 @@ bool cdragon::web::Downloader::downloadFile(std::string url, std::filesystem::pa
 
         res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
+            std::cout << "CURL ERROR: " << url << std::endl;
             std::cout << "CURL ERROR: " << curl_easy_strerror(res) << std::endl;
             status = false;
         }
@@ -65,14 +77,3 @@ bool cdragon::web::Downloader::downloadFile(std::string url, std::filesystem::pa
 
     throw std::exception("Failed to read from url!");
 }
-
-std::size_t cdragon::web::Downloader::writeString(void *ptr, std::size_t size, std::size_t nmemb, std::string* data) {
-    data->append((char*)ptr, size * nmemb);
-    return size * nmemb;
-}
-
-std::size_t cdragon::web::Downloader::writeData(void *ptr, std::size_t size, std::size_t nmemb, FILE *stream) {
-    size_t written = fwrite(ptr, size, nmemb, stream);
-    return written;
-}
-
