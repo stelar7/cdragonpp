@@ -1,8 +1,9 @@
 #pragma once
 
-#include <iostream>
-#include <iomanip>
 #include <sstream>
+#include <iomanip>
+#include <iostream>
+#include <algorithm>
 #include "RMANFile.hpp"
 #include "../../util/DragonStream.hpp"
 #include "../../../libs/zstd/include/zstd.h"
@@ -213,7 +214,7 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
                 body >> file.fileId;
 
                 if (file.structSize > 28) {
-                    body >> file.directoryId;
+                    body >> file.folderId;
                 }
 
                 body >> file.fileSize;
@@ -288,6 +289,8 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
                 obj.folders.push_back(folder);
             }
         }
+
+        obj.buildChunkMap();
         obj._valid = true;
     }
     catch (const std::exception& e) {
@@ -333,9 +336,9 @@ std::string cdragon::rman::RMANFileFile::fileIdAsHex()
     return toHex(this->fileId);
 }
 
-std::string cdragon::rman::RMANFileFile::directoryIdAsHex()
+std::string cdragon::rman::RMANFileFile::folderIdAsHex()
 {
-    return toHex(this->directoryId);
+    return toHex(this->folderId);
 }
 
 std::string cdragon::rman::RMANFileFile::languageIdAsHex()
@@ -353,3 +356,42 @@ std::string cdragon::rman::RMANFileFolder::parentIdAsHex()
     return toHex(this->parentId);
 }
 
+std::string cdragon::rman::RMANFileFile::getFilePath(RMANFile& manifest)
+{
+    std::string output = this->name;
+    RMANFileFolder parent;
+    for (RMANFileFolder& folder : manifest.folders) {
+        if (this->folderId == folder.folderId) {
+            parent = folder;
+            break;
+        }
+    }
+
+    while (parent.folderId != 0) {
+        output.insert(0, parent.name + "/");
+
+        for (RMANFileFolder& folder : manifest.folders) {
+            if (parent.parentId == folder.folderId) {
+                parent = folder;
+                break;
+            }
+        }
+    }
+
+    return output;
+}
+
+void cdragon::rman::RMANFile::buildChunkMap()
+{
+    for (RMANFileBundle& bundle : cdragon::rman::RMANFile::bundles) {
+        _bundleMap.insert(std::make_pair(bundle.bundleId, bundle));
+
+        std::int64_t index = 0;
+        for (RMANFileBundleChunk& chunk : bundle.chunks) {
+            RMANFileBundleChunkInfo chunkInfo(bundle.bundleId, chunk.chunkId, index, chunk.compressedSize);
+
+            _chunkMap.insert(std::make_pair(chunk.chunkId, chunkInfo));
+            index += chunk.compressedSize;
+        }
+    }
+}

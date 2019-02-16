@@ -1,7 +1,8 @@
 #pragma once
 
-#include <vector>
 #include <istream>
+#include <vector>
+#include <map>
 
 namespace cdragon {
 
@@ -10,6 +11,8 @@ namespace cdragon {
     }
 
     namespace rman {
+
+        class RMANFile;
 
         class RMANFileHeader {
         public:
@@ -42,6 +45,20 @@ namespace cdragon {
             std::int32_t folderListOffset;
             std::int32_t keyHeaderOffset;
             std::int32_t unknownOffset;
+        };
+
+        class RMANFileBundleChunkInfo {
+        public:
+            std::int64_t bundleId;
+            std::int64_t chunkId;
+            std::int64_t offset;
+            std::int64_t compressedSize;
+            RMANFileBundleChunkInfo(std::int64_t bundle, std::int64_t chunk, std::int64_t off, std::int64_t compressed) :
+                bundleId(bundle),
+                chunkId(chunk),
+                offset(off),
+                compressedSize(compressed) {};
+
         };
 
         class RMANFileBundleChunk {
@@ -98,7 +115,7 @@ namespace cdragon {
             std::string symlinkName;
 
             std::int64_t fileId;
-            std::int64_t directoryId;
+            std::int64_t folderId;
             std::int32_t fileSize;
             std::int32_t permissions;
             std::int32_t languageId;
@@ -115,8 +132,9 @@ namespace cdragon {
             std::vector<int64_t> chunks;
 
             std::string fileIdAsHex();
-            std::string directoryIdAsHex();
+            std::string folderIdAsHex();
             std::string languageIdAsHex();
+            std::string getFilePath(RMANFile& manifest);
         };
 
         class RMANFileFolder {
@@ -161,7 +179,10 @@ namespace cdragon {
 
         private:
             bool _valid = false;
+            std::map<std::int64_t, RMANFileBundle> _bundleMap;
+            std::map<std::int64_t, RMANFileBundleChunkInfo> _chunkMap;
 
+            void buildChunkMap();
         };
     }
 }
