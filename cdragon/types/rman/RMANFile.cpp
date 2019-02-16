@@ -1,9 +1,10 @@
 #pragma once
 
-#include "RMANFile.hpp"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include "RMANFile.hpp"
+#include "../../util/DragonStream.hpp"
 
 using namespace cdragon::util;
 using namespace cdragon::rman;

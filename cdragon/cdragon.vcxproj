@@ -23,12 +23,13 @@
     <ClInclude Include="types\rman\RMANFile.hpp" />
     <ClInclude Include="types\wad\WADFile.hpp" />
     <ClInclude Include="util\DragonStream.hpp" />
-    <ClInclude Include="util\WebUtil.hpp" />
+    <ClInclude Include="util\WebDownloader.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cdragon.cpp" />
     <ClCompile Include="types\rman\RMANFile.cpp" />
     <ClCompile Include="types\wad\WADFile.cpp" />
+    <ClCompile Include="util\WebDownloader.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

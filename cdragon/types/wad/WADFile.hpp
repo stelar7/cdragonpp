@@ -3,9 +3,12 @@
 #include <vector>
 #include <variant>
 #include <istream>
-#include "../../util/DragonStream.hpp"
 
 namespace cdragon {
+    namespace util {
+        class DragonInStream;
+    }
+
     namespace wad {
 
         enum WADCompressionType {

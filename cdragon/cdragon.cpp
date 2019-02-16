@@ -2,7 +2,7 @@
 #include <fstream>
 #include <filesystem>
 #include "../libs/json/json.hpp"
-#include "util/WebUtil.hpp"
+#include "util/WebDownloader.hpp"
 #include "types/wad/WADFile.hpp"
 #include "types/rman/PatcherJsonFile.hpp"
 #include "types/rman/RMANFile.hpp"
@@ -24,25 +24,9 @@ int main()
 #if TEST_RMAN
     {
         using json = nlohmann::json;
-        json value = R"(
-{
-    "enabled_client_installs_percent": 0.0, 
-    "toggles": {
-        "new_client_patcher": 0.0, 
-        "batch_16MB": 66.6, 
-        "new_game_patcher": 50.0, 
-        "batch_4MB": 66.6, 
-        "batch_8MB": 66.6
-    }, 
-    "timestamp": "2019-02-15T23:57:26.914000", 
-    "client_patch_url": "https://lol.secure.dyn.riotcdn.net/channels/public/releases/F8487EDD0EE47547.manifest", 
-    "version": 72, 
-    "game_patch_url": "https://lol.secure.dyn.riotcdn.net/channels/public/releases/BE533EC6530EC3D8.manifest", 
-    "enabled_game_installs_percent": 50.0
-}
-
-)"_json;
-
+        std::string manifestPath = "C:/Users/Steffen/Downloads/cdragon/patcher/manifests/72.json";
+        std::ifstream ifs(manifestPath, std::ios::binary);
+        json value = json::parse(ifs);
         PatcherJson jsonval = PatcherJson(value);
 
         RMANFile rman;

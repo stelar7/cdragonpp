@@ -2,7 +2,7 @@
 
 #include <fstream>
 #include <filesystem>
-#include "WebUtil.hpp"
+#include "WebDownloader.hpp"
 
 namespace cdragon {
     namespace util {
@@ -19,7 +19,7 @@ namespace cdragon {
                 _filename = "temp/" + (++_counter);
                 std::filesystem::path filepath(_filename);
 
-                cdragon::web::downloadFile(url, filepath);
+                getter.downloadFile(url, filepath);
                 ifs = std::ifstream(filepath, std::ios::binary);
             };
 
@@ -48,6 +48,7 @@ namespace cdragon {
             }
 
         private:
+            cdragon::web::Downloader getter;
             std::int64_t _counter = 0;
             std::string _filename = "";
         };

@@ -1,8 +1,8 @@
-#include "WADFile.hpp"
-#include "../../util/DragonStream.hpp"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include "WADFile.hpp"
+#include "../../util/DragonStream.hpp"
 
 using namespace cdragon::wad;
 using namespace cdragon::util;
