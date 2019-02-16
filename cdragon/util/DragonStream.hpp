@@ -1,6 +1,8 @@
 #pragma once
 
 #include <fstream>
+#include <filesystem>
+#include "WebUtil.hpp"
 
 namespace cdragon {
     namespace util {
@@ -8,7 +10,21 @@ namespace cdragon {
         class DragonInStream {
         public:
             std::ifstream ifs;
-            DragonInStream(std::string path) : ifs(std::ifstream(path, std::ios::binary)) {};
+            DragonInStream(std::filesystem::path path) : ifs(std::ifstream(path, std::ios::binary)) {};
+
+            DragonInStream(std::string url) {
+                _filename = "temp/" + (++_counter);
+                std::filesystem::path filepath(_filename);
+
+                cdragon::web::downloadFile(url, filepath);
+                ifs = std::ifstream(filepath, std::ios::binary);
+            };
+
+            ~DragonInStream() {
+                if (!_filename.empty()) {
+                    std::filesystem::remove_all(_filename);
+                }
+            }
 
             template<typename T>
             void read(T& v)
@@ -28,6 +44,9 @@ namespace cdragon {
                 return ifs;
             }
 
+        private:
+            std::int64_t _counter = 0;
+            std::string _filename = "";
         };
     }
 }

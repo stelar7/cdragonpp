@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 #include "..\libs\json\json.hpp"
 #include "util\DragonStream.hpp"
 #include "util\WebUtil.hpp"
@@ -39,18 +40,16 @@ int main()
 )"_json;
 
         PatcherJson jsonval = PatcherJson(value);
-        std::string data = downloadString(jsonval.client_patch_url);
 
         RMANFile rman;
-        // TODO: add byte-buffer capability to DragonStream
-        DragonInStream file = DragonInStream(data.c_str()); 
+        DragonInStream file = DragonInStream(jsonval.client_patch_url);
         file >> rman;
 
         std::cin.get();
 
     }
 
-    /*
+    
 
     std::string url = "http://stelar7.no/cdragon/version.txt";
     std::string output = "C:\\Users\\Steffen\\Desktop\\test\\version.txt";
@@ -65,7 +64,7 @@ int main()
 
     WADFile wad;
     std::string path = "C:\\Users\\Steffen\\Downloads\\cdragon\\FiddleSticks.wad.client";
-    DragonInStream file = DragonInStream(path);
+    DragonInStream file = DragonInStream(std::filesystem::path(path));
 
     file >> wad;
     if (wad) {
@@ -76,7 +75,7 @@ int main()
     }
 
     path = "C:\\Users\\Steffen\\Downloads\\cdragon\\9fbb7f50baf65f23.crid";
-    file = DragonInStream(path);
+    file = DragonInStream(std::filesystem::path(path));
 
     file >> wad;
     if (wad) {
@@ -86,7 +85,7 @@ int main()
         std::cout << path.data() << " parsed bad!" << std::endl;
     }
 
-    */
+    
 
     std::cin.get();
 
