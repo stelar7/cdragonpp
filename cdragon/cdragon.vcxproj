@@ -24,6 +24,7 @@
     <ClInclude Include="types\wad\WADFile.hpp" />
     <ClInclude Include="util\DragonStream.hpp" />
     <ClInclude Include="util\WebDownloader.hpp" />
+    <ClInclude Include="util\ZSTDHandler.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cdragon.cpp" />

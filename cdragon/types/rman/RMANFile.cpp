@@ -5,9 +5,10 @@
 #include <iostream>
 #include <algorithm>
 #include "RMANFile.hpp"
+#include "../../util/ZSTDHandler.hpp"
 #include "../../util/DragonStream.hpp"
-#include "../../../libs/zstd/include/zstd.h"
 
+using namespace cdragon::crypto;
 using namespace cdragon::util;
 using namespace cdragon::rman;
 
@@ -58,14 +59,8 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
         std::vector<std::byte> decompressedBytes;
         decompressedBytes.resize(obj.manifestHeader.decompressedLength);
 
-        ZSTD_DCtx* dctx = ZSTD_createDCtx();
-        ZSTD_inBuffer in = { compressedBytes.data(), compressedBytes.size(), 0 };
-        ZSTD_outBuffer out = { decompressedBytes.data(), decompressedBytes.size(), 0 };
-        std::size_t err = ZSTD_isError(ZSTD_decompressStream(dctx, &out, &in));
-        if (err) {
-            std::cout << ZSTD_getErrorName(err) << std::endl;
-        }
-
+        ZSTDHandler handler;
+        handler.decompress(compressedBytes, decompressedBytes);
 
         DragonByteStream body(decompressedBytes);
         std::int32_t headerOffset;
