@@ -13,17 +13,14 @@ int main()
 {
     std::string url = "http://stelar7.no/cdragon/version.txt";
     std::string output = "C:\\Users\\Steffen\\Desktop\\test\\version.txt";
+    std::filesystem::path outPath = std::filesystem::path(output);
 
     std::string data = downloadString(url);
     std::cout << data.data() << std::endl;
 
-    downloadFile(url, output);
+    downloadFile(url, outPath);
 
     std::cin.get();
-
-
-
-
 
 
     WADFile wad;

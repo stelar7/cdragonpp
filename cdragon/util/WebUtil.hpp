@@ -1,4 +1,5 @@
 #include "../../libs/curl/include/curl.h"
+#include <filesystem>
 #include <iostream>
 #include <string.h>
 #include <errno.h>
@@ -40,21 +41,17 @@ namespace cdragon {
             throw std::exception("Failed to read from url!");
         }
 
-        /*
-        This needs the parent directory to already exist.
-        Folder creation is not included in this function, as it is platform specific.
-        */
-        bool downloadFile(std::string url, std::string output) {
+        bool downloadFile(std::string url, std::filesystem::path output) {
             CURL* curl;
             CURLcode res;
             FILE* fp;
             bool status = true;
 
-            errno_t err = fopen_s(&fp, output.c_str(), "wb");
+            std::filesystem::create_directories(output.parent_path());
+            errno_t err = fopen_s(&fp, output.string().c_str(), "wb");
             if (err != 0) {
-                size_t errLen = 265;
-                char errmsg[266];
-                strerror_s(errmsg, errLen, err);
+                char errmsg[256];
+                strerror_s(errmsg, 256, err);
                 std::cout << errmsg << std::endl;
                 return false;
             }
