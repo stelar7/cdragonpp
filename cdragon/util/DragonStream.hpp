@@ -16,16 +16,26 @@ namespace cdragon {
             DragonInStream(std::filesystem::path path) : ifs(std::ifstream(path, std::ios::binary)) {};
 
             DragonInStream(std::string url) {
-                _filename = "temp/" + (++_counter);
-                std::filesystem::path filepath(_filename);
+
+                // make sure we have a unique filepath
+                std::filesystem::path filepath;
+                do {
+                    std::string _filename = "./temp/" + std::to_string(++_counter);
+                    filepath = std::filesystem::path(_filename);
+                } while (std::filesystem::exists(filepath));
+                paths.push_back(filepath);
 
                 getter.downloadFile(url, filepath);
                 ifs = std::ifstream(filepath, std::ios::binary);
             };
 
             ~DragonInStream() {
-                if (!_filename.empty()) {
-                    std::filesystem::remove_all(_filename);
+                ifs.close();
+
+                std::error_code err;
+                for (const std::filesystem::path& path : paths) {
+                    std::filesystem::remove_all(path, err);
+                    std::cout << err.message() << std::endl;
                 }
             }
 
@@ -49,8 +59,8 @@ namespace cdragon {
 
         private:
             cdragon::web::Downloader getter;
+            std::vector<std::filesystem::path> paths;
             std::int64_t _counter = 0;
-            std::string _filename = "";
         };
     }
 }

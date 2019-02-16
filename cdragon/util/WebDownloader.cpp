@@ -27,13 +27,12 @@ std::string cdragon::web::Downloader::downloadString(std::string url) {
 
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseString);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeString);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 
         res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
+            std::cout << "CURL ERROR: " << url << std::endl;
             std::cout << "CURL ERROR: " << curl_easy_strerror(res) << std::endl;
         }
 
@@ -54,13 +53,13 @@ bool cdragon::web::Downloader::downloadFile(std::string url, std::filesystem::pa
     if (err != 0) {
         char errmsg[256];
         strerror_s(errmsg, 256, err);
-        std::cout << errmsg << std::endl;
+        std::cout << "FILE ERROR: Path: " << output.string() << std::endl;
+        std::cout << "FILE ERROR: Message: " << errmsg << std::endl;
         return false;
     }
 
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeData);
 

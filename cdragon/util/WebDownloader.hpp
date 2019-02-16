@@ -17,6 +17,9 @@ namespace cdragon {
                 if (!curl) {
                     throw std::exception("FAILED TO INIT CURL");
                 }
+
+                curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
             }
 
             ~Downloader() {
