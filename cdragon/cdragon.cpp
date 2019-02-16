@@ -32,7 +32,6 @@ int main()
         RMANFile rman;
         DragonInStream file = DragonInStream(jsonval.client_patch_url);
         file >> rman;
-        std::cin.get();
     }
 #endif
 

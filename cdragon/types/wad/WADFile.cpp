@@ -10,8 +10,14 @@ using namespace cdragon::util;
 std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
 {
     try {
+
+        {
+            // clear out old data
+            obj = WADFile();
+        }
+
         is >> obj.header.magic;
-        if (obj.header.magic[0] != 'R' || obj.header.magic[1] != 'W') {
+        if (std::strcmp(obj.header.magic, "RW") != 0) {
             throw std::exception("Invalid magic number in header");
         }
 

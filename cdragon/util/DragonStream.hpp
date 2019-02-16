@@ -115,6 +115,14 @@ namespace cdragon {
                 }
             }
 
+            void read(std::string& v, std::int32_t size)
+            {
+                char buff[256];
+                read(buff, size);
+                v = std::string(buff);
+                v.resize(size);
+            }
+
             template<typename T>
             void read(T& v)
             {

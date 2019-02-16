@@ -111,7 +111,7 @@ namespace cdragon {
                 } unknowns;
             } unknowns;
 
-            bool singleChunk;
+            std::int32_t singleChunk;
             std::vector<int64_t> chunks;
 
             std::string fileIdAsHex();

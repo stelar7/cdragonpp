@@ -35,6 +35,9 @@ std::string cdragon::web::Downloader::downloadString(std::string url) {
             std::cout << "CURL ERROR: " << url << std::endl;
             std::cout << "CURL ERROR: " << curl_easy_strerror(res) << std::endl;
         }
+        else {
+            std::cout << "DOWNLOADING FILE TO MEMORY: " << url << std::endl;
+        }
 
         return responseString;
     }
@@ -68,6 +71,10 @@ bool cdragon::web::Downloader::downloadFile(std::string url, std::filesystem::pa
             std::cout << "CURL ERROR: " << url << std::endl;
             std::cout << "CURL ERROR: " << curl_easy_strerror(res) << std::endl;
             status = false;
+        }
+        else {
+            std::cout << "DOWNLOADING FILE: " << url << std::endl;
+            std::cout << "TO LOCAL DRIVE: " << std::filesystem::absolute(output).string() << std::endl;
         }
 
         fclose(fp);
