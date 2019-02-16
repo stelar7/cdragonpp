@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../../libs/curl/include/curl.h"
 #include <filesystem>
 #include <iostream>
@@ -28,10 +30,11 @@ namespace cdragon {
                 curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
                 curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseString);
                 curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeString);
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 
                 res = curl_easy_perform(curl);
                 if (res != CURLE_OK) {
-                    std::cout << curl_easy_strerror(res) << std::endl;
+                    std::cout << "CURL ERROR: " << curl_easy_strerror(res) << std::endl;
                 }
 
                 curl_easy_cleanup(curl);
@@ -65,7 +68,7 @@ namespace cdragon {
 
                 res = curl_easy_perform(curl);
                 if (res != CURLE_OK) {
-                    std::cout << curl_easy_strerror(res) << std::endl;
+                    std::cout << "CURL ERROR: " << curl_easy_strerror(res) << std::endl;
                     status = false;
                 }
 

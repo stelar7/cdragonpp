@@ -1,5 +1,5 @@
 #include "WADFile.hpp"
-#include "../util/DragonStream.hpp"
+#include "../../util/DragonStream.hpp"
 #include <iostream>
 #include <iomanip>
 #include <sstream>

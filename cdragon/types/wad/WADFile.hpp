@@ -1,9 +1,9 @@
 #pragma once
+
 #include <vector>
-#include <array>
-#include <cstddef>
 #include <variant>
-#include "../util/DragonStream.hpp"
+#include <istream>
+#include "../../util/DragonStream.hpp"
 
 namespace cdragon {
     namespace wad {
