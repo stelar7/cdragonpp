@@ -57,6 +57,18 @@ namespace cdragon {
                 return ifs;
             }
 
+            void seek(std::int32_t pos) {
+                ifs.seekg(pos);
+            }
+
+            void seek(std::int32_t pos, std::ios_base::seekdir direction) {
+                ifs.seekg(pos, direction);
+            }
+
+            std::int32_t pos() {
+                return ifs.tellg();
+            }
+
         private:
             cdragon::web::Downloader getter;
             std::vector<std::filesystem::path> paths;
