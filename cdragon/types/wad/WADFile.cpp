@@ -40,19 +40,8 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
             WADHeader::v2 ver;
             is >> (ver.ECDSALength);
 
-            // is there a better way to do this?
-            for (std::int8_t i = 0; i < ver.ECDSALength; i++) {
-                std::byte val;
-                is >> val;
-                ver.ECDSA.push_back(val);
-            }
-
-            // is there a better way to do this?
-            for (std::int8_t i = 0; i < (83 - ver.ECDSALength); i++) {
-                std::byte val;
-                is >> val;
-                ver.ECDSAPadding.push_back(val);
-            }
+            is.read(ver.ECDSA, ver.ECDSALength);
+            is.read(ver.ECDSAPadding, 83 - ver.ECDSALength);
 
             is >> ver.checksum;
             is >> ver.entryOffset;
@@ -66,12 +55,7 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
         if (obj.header.major == 3) {
             WADHeader::v3 ver;
 
-            // is there a better way to do this?
-            for (std::int16_t i = 0; i < 256; i++) {
-                std::byte val;
-                is >> val;
-                ver.ECDSA.push_back(val);
-            }
+            is.read(ver.ECDSA, 256);
             is >> ver.checksum;
             is >> ver.entryCount;
 

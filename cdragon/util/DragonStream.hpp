@@ -51,6 +51,23 @@ namespace cdragon {
                 ifs.read(reinterpret_cast<char*>(&v), size);
             }
 
+            void read(std::string& v, std::int32_t size)
+            {
+                char buff[256];
+                read(buff, size);
+                v = std::string(buff);
+                v.resize(size);
+            }
+
+            void read(std::vector<std::byte>&v, std::int32_t size)
+            {
+                for (std::int32_t i = 0; i < size; i++) {
+                    std::byte val;
+                    read(val, sizeof(std::int8_t));
+                    v.push_back(val);
+                }
+            }
+
             template<typename T>
             std::ifstream& operator>>(T& type) {
                 ifs.read(reinterpret_cast<char*>(&type), sizeof(type));
@@ -121,6 +138,15 @@ namespace cdragon {
                 read(buff, size);
                 v = std::string(buff);
                 v.resize(size);
+            }
+
+            void read(std::vector<std::byte>&v, std::int32_t size)
+            {
+                for (std::int32_t i = 0; i < size; i++) {
+                    std::byte val;
+                    read(val, sizeof(std::int8_t));
+                    v.push_back(val);
+                }
             }
 
             template<typename T>

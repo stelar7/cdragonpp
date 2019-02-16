@@ -41,18 +41,10 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
 
         // read remaining body into arrays
         std::vector<std::byte> compressedBytes;
-        for (std::int32_t i = 0; i < obj.manifestHeader.length; i++) {
-            std::byte val;
-            is >> val;
-            compressedBytes.push_back(val);
-        }
+        is.read(compressedBytes, obj.manifestHeader.length);
 
         if (obj.manifestHeader.signatureType != 0) {
-            for (std::int16_t i = 0; i < 256; i++) {
-                std::byte val;
-                is >> val;
-                obj.signature.push_back(val);
-            }
+            is.read(obj.signature, 256);
         }
 
         // decompress and keep parsing
@@ -120,11 +112,7 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
                 body >> bundle.bundleId;
 
                 if (bundle.headerSize > 12) {
-                    for (std::int16_t i = 0; i < (bundle.headerSize - 12); i++) {
-                        std::byte val;
-                        body >> val;
-                        bundle.skipped.push_back(val);
-                    }
+                    is.read(bundle.skipped, bundle.headerSize - 12);
                 }
 
                 std::int32_t chunkCount;

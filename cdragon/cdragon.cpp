@@ -13,7 +13,7 @@ using namespace cdragon::rman;
 using namespace cdragon::util;
 using namespace cdragon::web;
 
-#define TEST_RMAN 1
+#define TEST_RMAN 0
 #define TEST_WAD 0
 #define TEST_GET 0
 
