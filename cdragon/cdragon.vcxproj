@@ -20,12 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="types\rman\PatcherJsonFile.hpp" />
+    <ClInclude Include="types\rman\RMANFile.hpp" />
     <ClInclude Include="types\wad\WADFile.hpp" />
     <ClInclude Include="util\DragonStream.hpp" />
     <ClInclude Include="util\WebUtil.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cdragon.cpp" />
+    <ClCompile Include="types\rman\RMANFile.cpp" />
     <ClCompile Include="types\wad\WADFile.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

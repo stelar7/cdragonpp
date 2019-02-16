@@ -1,5 +1,6 @@
+#pragma once
+
 #include "RMANFile.hpp"
-#include "../../util/DragonStream.hpp"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -9,12 +10,12 @@ using namespace cdragon::rman;
 
 std::istream& operator>>(DragonInStream& is, RMANFile& file)
 {
-    return is;
+    return is.ifs;
 }
 
 std::string toHex(std::int64_t val) {
     std::stringstream ss;
-    ss << std::uppercase << std::setfill('0') << std::setw(16) << std::hex << this->manifestId;
+    ss << std::uppercase << std::setfill('0') << std::setw(16) << std::hex << val;
     return ss.str();
 }
 

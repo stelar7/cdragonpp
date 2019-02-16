@@ -2,9 +2,13 @@
 
 #include <vector>
 #include <istream>
-#include "../../util/DragonStream.hpp"
 
 namespace cdragon {
+
+    namespace util {
+        class DragonInStream;
+    }
+
     namespace rman {
 
         class RMANFileHeader {
@@ -68,10 +72,8 @@ namespace cdragon {
             std::int32_t offsetTableOffset;
             std::int32_t languageId;
 
-            union name {
-                std::int32_t nameOffset;
-                std::string name;
-            };
+            std::int32_t nameOffset;
+            std::string name;
 
             std::string idAsHex();
         };
@@ -89,17 +91,13 @@ namespace cdragon {
                 std::int32_t offset;
             };
 
-            union name {
-                std::int32_t nameOffset;
-                std::string name;
-            };
+            std::int32_t nameOffset;
+            std::string name;
 
             std::int32_t structSize;
 
-            union symlink {
-                std::int32_t nameOffset;
-                std::string name;
-            };
+            std::int32_t symlinkOffset;
+            std::string symlinkName;
 
             std::int64_t fileId;
             std::int64_t directoryId;
@@ -130,10 +128,8 @@ namespace cdragon {
             std::int16_t folderIdOffset;
             std::int16_t parentIdOffset;
 
-            union name {
-                std::int32_t nameOffset;
-                std::string name;
-            };
+            std::int32_t nameOffset;
+            std::string name;
 
             std::int64_t folderId;
             std::int64_t parentId;

@@ -27,12 +27,18 @@
     <ClInclude Include="util\WebUtil.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="types\rman\RMANFile.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cdragon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="types\wad\WADFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="types\rman\RMANFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

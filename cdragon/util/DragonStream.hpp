@@ -7,6 +7,9 @@
 namespace cdragon {
     namespace util {
 
+        /*
+        you must access this.ifs.open(file) to change it...
+        */
         class DragonInStream {
         public:
             std::ifstream ifs;
