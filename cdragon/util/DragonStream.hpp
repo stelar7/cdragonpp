@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <iterator>
 #include <filesystem>
 #include "WebDownloader.hpp"
 
@@ -53,25 +54,20 @@ namespace cdragon {
 
             void read(std::string& v, std::int32_t size)
             {
-                char buff[256];
-                read(buff, size);
-                v = std::string(buff);
                 v.resize(size);
+                ifs.read((char*)v.data(), size);
             }
 
             void read(std::vector<std::byte>&v, std::int32_t size)
             {
-                for (std::int32_t i = 0; i < size; i++) {
-                    std::byte val;
-                    read(val, sizeof(std::int8_t));
-                    v.push_back(val);
-                }
+                v.resize(size);
+                ifs.read((char*)v.data(), size);
             }
 
             template<typename T>
-            std::ifstream& operator>>(T& type) {
+            DragonInStream* operator>>(T& type) {
                 ifs.read(reinterpret_cast<char*>(&type), sizeof(type));
-                return ifs;
+                return this;
             }
 
             void seek(std::int32_t pos) {
@@ -134,19 +130,14 @@ namespace cdragon {
 
             void read(std::string& v, std::int32_t size)
             {
-                char buff[256];
-                read(buff, size);
-                v = std::string(buff);
                 v.resize(size);
+                std::istream::read((char*)v.data(), size);
             }
 
             void read(std::vector<std::byte>&v, std::int32_t size)
             {
-                for (std::int32_t i = 0; i < size; i++) {
-                    std::byte val;
-                    read(val, sizeof(std::int8_t));
-                    v.push_back(val);
-                }
+                v.resize(size);
+                std::istream::read((char*)v.data(), size);
             }
 
             template<typename T>
