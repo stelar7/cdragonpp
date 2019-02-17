@@ -86,7 +86,7 @@ namespace cdragon {
             }
 
         private:
-            cdragon::web::Downloader getter;
+            web::Downloader getter;
             std::vector<std::filesystem::path> paths;
             std::int64_t _counter = 0;
         };

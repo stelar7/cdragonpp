@@ -13,9 +13,9 @@ using namespace cdragon::rman;
 using namespace cdragon::util;
 using namespace cdragon::web;
 
-#define TEST_RMAN 1
-#define TEST_WAD 1
-#define TEST_GET 1
+#define TEST_RMAN 0
+#define TEST_WAD 0
+#define TEST_GET 0
 
 
 int main()
@@ -28,6 +28,8 @@ int main()
         std::ifstream ifs(manifestPath, std::ios::binary);
         auto value = json::parse(ifs);
         auto jsonval = PatcherJson(value);
+
+        std::cout << "Starting parsing of: " << jsonval.client_patch_url << std::endl;
 
         auto file = DragonInStream(jsonval.client_patch_url);
         RMANFile rman;
@@ -61,6 +63,8 @@ int main()
         std::string path = R"(C:\Users\Steffen\Downloads\cdragon\FiddleSticks.wad.client)";
         auto file = DragonInStream(std::filesystem::path(path));
 
+        std::cout << "Starting parsing of: " << path.data() << std::endl;
+
         WADFile wad;
         file >> wad;
         if (wad) {
@@ -73,6 +77,8 @@ int main()
         // tries to parse an invalid WAD file
         path = R"(C:\Users\Steffen\Downloads\cdragon\9fbb7f50baf65f23.crid)";
         file.ifs.open(std::filesystem::path(path));
+
+        std::cout << "Starting parsing of: " << path.data() << std::endl;
 
         file >> wad;
         if (wad) {
