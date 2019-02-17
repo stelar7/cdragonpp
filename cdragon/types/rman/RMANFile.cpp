@@ -1,9 +1,6 @@
-#pragma once
-
 #include <sstream>
 #include <iomanip>
 #include <iostream>
-#include <algorithm>
 #include "RMANFile.hpp"
 #include "../../util/ZSTDHandler.hpp"
 #include "../../util/DragonStream.hpp"
@@ -205,14 +202,14 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
 
                 if (file.structSize > 36) {
                     body >> file.languageId;
-                    body >> file.unknowns.unknowns.unknown1;
+                    body >> file.unknowns.combined.unknown1;
                 }
 
                 body >> file.singleChunk;
                 if (file.singleChunk) {
                     std::int64_t chunk;
                     body >> chunk;
-                    body >> file.unknowns.unknowns.unknown2;
+                    body >> file.unknowns.combined.unknown2;
                     file.chunks.push_back(chunk);
                 }
                 else {
@@ -294,56 +291,56 @@ std::string toHex(std::int64_t val) {
     return ss.str();
 }
 
-std::string cdragon::rman::RMANFileHeader::idAsHex()
+std::string cdragon::rman::RMANFileHeader::idAsHex() const
 {
     return toHex(this->manifestId);
 }
 
-std::string cdragon::rman::RMANFileBundleChunk::idAsHex()
+std::string cdragon::rman::RMANFileBundleChunk::idAsHex() const
 {
     return toHex(this->chunkId);
 }
 
-std::string cdragon::rman::RMANFileBundle::idAsHex()
+std::string cdragon::rman::RMANFileBundle::idAsHex() const
 {
     return toHex(this->bundleId);
 }
 
-std::string cdragon::rman::RMANFileLanguage::idAsHex()
+std::string cdragon::rman::RMANFileLanguage::idAsHex() const
 {
     return toHex(this->languageId);
 }
 
-std::string cdragon::rman::RMANFileFile::fileIdAsHex()
+std::string cdragon::rman::RMANFileFile::fileIdAsHex() const
 {
     return toHex(this->fileId);
 }
 
-std::string cdragon::rman::RMANFileFile::folderIdAsHex()
+std::string cdragon::rman::RMANFileFile::folderIdAsHex() const
 {
     return toHex(this->folderId);
 }
 
-std::string cdragon::rman::RMANFileFile::languageIdAsHex()
+std::string cdragon::rman::RMANFileFile::languageIdAsHex() const
 {
     return toHex(this->languageId);
 }
 
-std::string cdragon::rman::RMANFileFolder::folderIdAsHex()
+std::string cdragon::rman::RMANFileFolder::folderIdAsHex() const
 {
     return toHex(this->folderId);
 }
 
-std::string cdragon::rman::RMANFileFolder::parentIdAsHex()
+std::string cdragon::rman::RMANFileFolder::parentIdAsHex() const
 {
     return toHex(this->parentId);
 }
 
-std::string cdragon::rman::RMANFileFile::getFilePath(RMANFile& manifest)
+std::string cdragon::rman::RMANFileFile::getFilePath(RMANFile& manifest) const
 {
-    std::string output = this->name;
+    auto output = this->name;
     RMANFileFolder parent;
-    for (RMANFileFolder& folder : manifest.folders) {
+    for (auto& folder : manifest.folders) {
         if (this->folderId == folder.folderId) {
             parent = folder;
             break;
@@ -353,7 +350,7 @@ std::string cdragon::rman::RMANFileFile::getFilePath(RMANFile& manifest)
     while (parent.folderId != 0) {
         output.insert(0, parent.name + "/");
 
-        for (RMANFileFolder& folder : manifest.folders) {
+        for (auto& folder : manifest.folders) {
             if (parent.parentId == folder.folderId) {
                 parent = folder;
                 break;
@@ -366,11 +363,11 @@ std::string cdragon::rman::RMANFileFile::getFilePath(RMANFile& manifest)
 
 void cdragon::rman::RMANFile::buildChunkMap()
 {
-    for (RMANFileBundle& bundle : cdragon::rman::RMANFile::bundles) {
+    for (auto& bundle : cdragon::rman::RMANFile::bundles) {
         _bundleMap.insert(std::make_pair(bundle.bundleId, bundle));
 
         std::int64_t index = 0;
-        for (RMANFileBundleChunk& chunk : bundle.chunks) {
+        for (auto & chunk : bundle.chunks) {
             RMANFileBundleChunkInfo chunkInfo(bundle.bundleId, chunk.chunkId, index, chunk.compressedSize);
 
             _chunkMap.insert(std::make_pair(chunk.chunkId, chunkInfo));

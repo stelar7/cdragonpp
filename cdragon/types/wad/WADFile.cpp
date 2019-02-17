@@ -104,7 +104,7 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
     return is.ifs;
 }
 
-std::string cdragon::wad::WADContentHeader::v1::hashAsHex()
+std::string cdragon::wad::WADContentHeader::v1::hashAsHex() const
 {
     std::stringstream ss;
     ss << std::uppercase << std::setfill('0') << std::setw(16) << std::hex << this->pathHash;

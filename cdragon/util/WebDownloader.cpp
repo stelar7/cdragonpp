@@ -1,28 +1,23 @@
-#pragma once
-
 #include "WebDownloader.hpp"
 #include "../../libs/curl/include/curl.h"
 #include <filesystem>
 #include <iostream>
-#include <string.h>
-#include <errno.h>
 
 using namespace cdragon::web;
 
 
-std::size_t writeString(void *ptr, std::size_t size, std::size_t nmemb, std::string* data) {
-    data->append((char*)ptr, size * nmemb);
+std::size_t writeString(void *ptr, const std::size_t size, const std::size_t nmemb, std::string* data) {
+    data->append(reinterpret_cast<char*>(ptr), size * nmemb);
     return size * nmemb;
 }
 
-std::size_t writeData(void *ptr, std::size_t size, std::size_t nmemb, FILE *stream) {
-    size_t written = fwrite(ptr, size, nmemb, stream);
+std::size_t writeData(void *ptr, const std::size_t size, const std::size_t nmemb, FILE *stream) {
+    const auto written = fwrite(ptr, size, nmemb, stream);
     return written;
 }
 
 
-std::string cdragon::web::Downloader::downloadString(std::string url) {
-    CURLcode res;
+std::string cdragon::web::Downloader::downloadString(std::string& url) const {
     std::string responseString;
 
     if (curl) {
@@ -30,7 +25,7 @@ std::string cdragon::web::Downloader::downloadString(std::string url) {
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseString);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeString);
 
-        res = curl_easy_perform(curl);
+        const auto res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             std::cout << "CURL ERROR: " << url << std::endl;
             std::cout << "CURL ERROR: " << curl_easy_strerror(res) << std::endl;
@@ -46,13 +41,12 @@ std::string cdragon::web::Downloader::downloadString(std::string url) {
 }
 
 
-bool cdragon::web::Downloader::downloadFile(std::string url, std::filesystem::path output) {
-    CURLcode res;
+bool cdragon::web::Downloader::downloadFile(std::string& url, std::filesystem::path& output) const {
     FILE* fp;
-    bool status = true;
+    auto status = true;
 
     std::filesystem::create_directories(output.parent_path());
-    errno_t err = fopen_s(&fp, output.string().c_str(), "wb");
+    const auto err = fopen_s(&fp, output.string().c_str(), "wb");
     if (err != 0) {
         char errmsg[256];
         strerror_s(errmsg, 256, err);
@@ -66,7 +60,7 @@ bool cdragon::web::Downloader::downloadFile(std::string url, std::filesystem::pa
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeData);
 
-        res = curl_easy_perform(curl);
+        const auto res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             std::cout << "CURL ERROR: " << url << std::endl;
             std::cout << "CURL ERROR: " << curl_easy_strerror(res) << std::endl;

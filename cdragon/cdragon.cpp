@@ -1,4 +1,3 @@
-#include <iostream>
 #include <fstream>
 #include <filesystem>
 #include "../libs/json/json.hpp"
@@ -7,6 +6,7 @@
 #include "types/rman/PatcherJsonFile.hpp"
 #include "types/rman/RMANFile.hpp"
 #include "util/DragonStream.hpp"
+#include <iostream>
 
 using namespace cdragon::wad;
 using namespace cdragon::rman;
@@ -14,8 +14,8 @@ using namespace cdragon::util;
 using namespace cdragon::web;
 
 #define TEST_RMAN 1
-#define TEST_WAD 0
-#define TEST_GET 0
+#define TEST_WAD 1
+#define TEST_GET 1
 
 
 int main()
@@ -26,12 +26,14 @@ int main()
         using json = nlohmann::json;
         std::string manifestPath = "C:/Users/Steffen/Downloads/cdragon/patcher/manifests/72.json";
         std::ifstream ifs(manifestPath, std::ios::binary);
-        json value = json::parse(ifs);
-        PatcherJson jsonval = PatcherJson(value);
+        auto value = json::parse(ifs);
+        auto jsonval = PatcherJson(value);
 
+        auto file = DragonInStream(jsonval.client_patch_url);
         RMANFile rman;
-        DragonInStream file = DragonInStream(jsonval.client_patch_url);
         file >> rman;
+
+        std::cin.get();
     }
 #endif
 
@@ -39,14 +41,16 @@ int main()
     {
         // downloads a string and stores it in memory
         std::string url = "http://stelar7.no/cdragon/version.txt";
-        std::string output = "C:\\Users\\Steffen\\Desktop\\test\\version.txt";
-        std::filesystem::path outPath = std::filesystem::path(output);
+        std::string output = R"(C:\Users\Steffen\Desktop\test\version.txt)";
+        auto outPath = std::filesystem::path(output);
 
-        std::string data = downloadString(url);
+        Downloader downloader;
+        auto data = downloader.downloadString(url);
         std::cout << data.data() << std::endl;
 
         // downloads a string and stores it in a file
-        downloadFile(url, outPath);
+        downloader.downloadFile(url, outPath);
+
         std::cin.get();
     }
 #endif
@@ -54,10 +58,10 @@ int main()
 #if TEST_WAD
     {
         // tries to parse a valid WAD file
-        WADFile wad;
-        std::string path = "C:\\Users\\Steffen\\Downloads\\cdragon\\FiddleSticks.wad.client";
-        DragonInStream file = DragonInStream(std::filesystem::path(path));
+        std::string path = R"(C:\Users\Steffen\Downloads\cdragon\FiddleSticks.wad.client)";
+        auto file = DragonInStream(std::filesystem::path(path));
 
+        WADFile wad;
         file >> wad;
         if (wad) {
             std::cout << path.data() << " parsed ok!" << std::endl;
@@ -67,7 +71,7 @@ int main()
         }
 
         // tries to parse an invalid WAD file
-        path = "C:\\Users\\Steffen\\Downloads\\cdragon\\9fbb7f50baf65f23.crid";
+        path = R"(C:\Users\Steffen\Downloads\cdragon\9fbb7f50baf65f23.crid)";
         file.ifs.open(std::filesystem::path(path));
 
         file >> wad;
@@ -77,6 +81,7 @@ int main()
         else {
             std::cout << path.data() << " parsed bad!" << std::endl;
         }
+
         std::cin.get();
     }
 #endif

@@ -20,13 +20,17 @@ namespace cdragon {
 
         class WADHeader {
         public:
+            WADHeader() :magic{ 0,0 }, major(0), minor(0) {}
+
             struct v1 {
+                v1() : entryOffset(0), entryCellSize(0), entryCount(0) {};
                 std::int16_t entryOffset;
                 std::int16_t entryCellSize;
                 std::int32_t entryCount;
             };
 
             struct v2 {
+                v2() :ECDSALength(0), checksum(0), entryOffset(0), entryCellSize(0), entryCount(0) {};
                 std::int8_t ECDSALength;
                 std::vector<std::byte> ECDSA;
                 std::vector<std::byte> ECDSAPadding;
@@ -37,6 +41,7 @@ namespace cdragon {
             };
 
             struct v3 {
+                v3() : checksum(0), entryCount(0) {};
                 std::vector<std::byte> ECDSA;
                 std::int64_t checksum;
                 std::int32_t entryCount;
@@ -52,20 +57,22 @@ namespace cdragon {
         public:
             class v1 {
             public:
+                v1() : pathHash(0), offset(0), compressedSize(0), uncompressedSize(0), compression(WADCompressionType::NONE) {};
+
                 std::int64_t pathHash;
                 std::int32_t offset;
                 std::int32_t compressedSize;
                 std::int32_t uncompressedSize;
                 WADCompressionType compression;
 
-                std::string hashAsHex();
+                std::string hashAsHex() const;
             };
 
             class v2 : v1 {
             public:
-                v2(v1 old) : v1(old) {};
+                explicit v2(const v1 old) : v1(old), duplicate(0), paddding(0), sha256(0) {};
 
-                bool duplicate;
+                std::uint8_t duplicate;
                 std::int16_t paddding;
                 std::int64_t sha256;
             };
@@ -79,7 +86,7 @@ namespace cdragon {
             WADHeader header;
             std::vector<WADContentHeader> content;
 
-            friend std::istream& operator>>(cdragon::util::DragonInStream &is, WADFile &file);
+            friend std::istream& operator>>(cdragon::util::DragonInStream &is, WADFile &obj);
 
             bool operator!() const
             {

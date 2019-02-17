@@ -19,7 +19,7 @@ namespace cdragon {
             char magic[4];
 
             union version {
-                std::int16_t version;
+                std::int16_t combined;
                 struct {
                     std::int8_t major;
                     std::int8_t minor;
@@ -33,7 +33,7 @@ namespace cdragon {
             std::int64_t manifestId;
             std::int32_t decompressedLength;
 
-            std::string idAsHex();
+            std::string idAsHex() const;
         };
 
         class RMANFileOffsetTable {
@@ -53,7 +53,7 @@ namespace cdragon {
             std::int64_t chunkId;
             std::int64_t offset;
             std::int64_t compressedSize;
-            RMANFileBundleChunkInfo(std::int64_t bundle, std::int64_t chunk, std::int64_t off, std::int64_t compressed) :
+            RMANFileBundleChunkInfo(const std::int64_t bundle, const std::int64_t chunk, const std::int64_t off, const std::int64_t compressed) :
                 bundleId(bundle),
                 chunkId(chunk),
                 offset(off),
@@ -63,16 +63,26 @@ namespace cdragon {
 
         class RMANFileBundleChunk {
         public:
+            RMANFileBundleChunk() : offsetTableOffset(0),
+                compressedSize(0),
+                uncompressedSize(0),
+                chunkId(0) {};
+
             std::int32_t offsetTableOffset;
             std::int32_t compressedSize;
             std::int32_t uncompressedSize;
             std::int64_t chunkId;
 
-            std::string idAsHex();
+            std::string idAsHex() const;
         };
 
         class RMANFileBundle {
         public:
+            RMANFileBundle() : offset(0),
+                offsetTableOffset(0),
+                headerSize(0),
+                bundleId(0) {};
+
             std::int32_t offset;
             std::int32_t offsetTableOffset;
             std::int32_t headerSize;
@@ -80,11 +90,16 @@ namespace cdragon {
             std::vector<std::byte> skipped;
             std::vector<RMANFileBundleChunk> chunks;
 
-            std::string idAsHex();
+            std::string idAsHex() const;
         };
 
         class RMANFileLanguage {
         public:
+            RMANFileLanguage() : offset(0),
+                offsetTableOffset(0),
+                languageId(0),
+                nameOffset(0) {};
+
             std::int32_t offset;
             std::int32_t offsetTableOffset;
             std::int32_t languageId;
@@ -92,11 +107,24 @@ namespace cdragon {
             std::int32_t nameOffset;
             std::string name;
 
-            std::string idAsHex();
+            std::string idAsHex() const;
         };
 
         class RMANFileFile {
         public:
+            RMANFileFile() : offset(0),
+                offsetTableOffset(0),
+                nameOffset({}),
+                structSize(0),
+                symlinkOffset(0),
+                fileId(0),
+                folderId(0),
+                fileSize(0),
+                permissions(0),
+                languageId(0),
+                unknowns({}),
+                singleChunk(0) {};
+
             std::int32_t offset;
             std::int32_t offsetTableOffset;
 
@@ -121,24 +149,26 @@ namespace cdragon {
             std::int32_t languageId;
 
             union unknowns {
-                std::int64_t unknown;
+                std::int64_t large;
                 struct {
                     std::int32_t unknown1;
                     std::int32_t unknown2;
-                } unknowns;
+                } combined;
             } unknowns;
 
             std::int32_t singleChunk;
             std::vector<int64_t> chunks;
 
-            std::string fileIdAsHex();
-            std::string folderIdAsHex();
-            std::string languageIdAsHex();
-            std::string getFilePath(RMANFile& manifest);
+            std::string fileIdAsHex() const;
+            std::string folderIdAsHex() const;
+            std::string languageIdAsHex() const;
+            std::string getFilePath(RMANFile& manifest) const;
         };
 
         class RMANFileFolder {
         public:
+            RMANFileFolder() : offset(0), offsetTableOffset(0), folderIdOffset(0), parentIdOffset(0), nameOffset(0), folderId(0), parentId(0) {};
+
             std::int32_t offset;
             std::int32_t offsetTableOffset;
             std::int16_t folderIdOffset;
@@ -150,12 +180,14 @@ namespace cdragon {
             std::int64_t folderId;
             std::int64_t parentId;
 
-            std::string folderIdAsHex();
-            std::string parentIdAsHex();
+            std::string folderIdAsHex() const;
+            std::string parentIdAsHex() const;
         };
 
         class RMANFile {
         public:
+            RMANFile() : manifestHeader(RMANFileHeader()), offsetTable(RMANFileOffsetTable()) {};
+
             RMANFileHeader manifestHeader;
             RMANFileOffsetTable offsetTable;
             std::vector<std::byte> signature;
@@ -165,7 +197,7 @@ namespace cdragon {
             std::vector<RMANFileFile> files;
             std::vector<RMANFileFolder> folders;
 
-            friend std::istream& operator>>(cdragon::util::DragonInStream &is, RMANFile &file);
+            friend std::istream& operator>>(cdragon::util::DragonInStream &is, RMANFile &obj);
 
             bool operator!() const
             {
