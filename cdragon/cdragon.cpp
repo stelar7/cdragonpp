@@ -1,6 +1,9 @@
 #include <fstream>
 #include <filesystem>
-#include "../libs/json/json.hpp"
+#include "../libs/rapidjson/istreamwrapper.h"
+#include "../libs/rapidjson/stringbuffer.h"
+#include "../libs/rapidjson/document.h"
+#include "../libs/rapidjson/writer.h"
 #include "util/WebDownloader.hpp"
 #include "types/wad/WADFile.hpp"
 #include "types/rman/PatcherJsonFile.hpp"
@@ -13,7 +16,7 @@ using namespace cdragon::rman;
 using namespace cdragon::util;
 using namespace cdragon::web;
 
-#define TEST_RMAN 0
+#define TEST_RMAN 1
 #define TEST_WAD 0
 #define TEST_GET 0
 
@@ -23,19 +26,33 @@ int main()
 
 #if TEST_RMAN
     {
-        using json = nlohmann::json;
-        std::string manifestPath = "C:/Users/Steffen/Downloads/cdragon/patcher/manifests/72.json";
+
+        const std::string manifestPath = "C:/Users/Steffen/Downloads/cdragon/patcher/manifests/72.json";
         std::ifstream ifs(manifestPath, std::ios::binary);
-        auto value = json::parse(ifs);
-        auto jsonval = PatcherJson(value);
+
+        using namespace  rapidjson;
+        rapidjson::IStreamWrapper isw(ifs);
+        Document d;
+        d.ParseStream(isw);
+        auto jsonval = PatcherJson(d);
 
         std::cout << "Starting parsing of: " << jsonval.client_patch_url << std::endl;
-
         auto file = DragonInStream(jsonval.client_patch_url);
         RMANFile rman;
         file >> rman;
 
-        std::cin.get();
+        
+        StringBuffer buffer;
+        PrettyWriter<StringBuffer> writer(buffer);
+        rman.Serialize(writer);
+
+        std::ofstream myfile;
+        myfile.open(R"(C:\Users\Steffen\Desktop\rman.txt)");
+        myfile << buffer.GetString();
+        myfile.close();
+        
+
+       // std::cin.get();
     }
 #endif
 

@@ -97,10 +97,10 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
             body.seek(obj.offsetTable.bundleListOffset);
             std::int32_t bundleCount;
             body >> bundleCount;
-            for (std::int32_t i = 0; i < bundleCount; i++) {
+            for (auto i = 0; i < bundleCount; i++) {
                 RMANFileBundle bundle;
                 body >> bundle.offset;
-                std::int32_t nextBundle = body.pos();
+                auto nextBundle = body.pos();
 
                 body.seek(bundle.offset - 4, std::ios_base::cur);
 
@@ -114,10 +114,10 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
 
                 std::int32_t chunkCount;
                 body >> chunkCount;
-                for (std::int32_t j = 0; j < chunkCount; j++) {
+                for (auto j = 0; j < chunkCount; j++) {
                     std::int32_t chunkOffset;
                     body >> chunkOffset;
-                    std::int32_t nextChunk = body.pos();
+                    auto nextChunk = body.pos();
                     body.seek(chunkOffset - 4);
 
                     RMANFileBundleChunk chunk;
@@ -139,10 +139,10 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
             body.seek(obj.offsetTable.languageListOffset);
             std::int32_t languageCount;
             body >> languageCount;
-            for (std::int32_t i = 0; i < languageCount; i++) {
+            for (auto i = 0; i < languageCount; i++) {
                 RMANFileLanguage lang;
                 body >> lang.offset;
-                std::int32_t nextLang = body.pos();
+                auto nextLang = body.pos();
 
                 body.seek(lang.offset - 4, std::ios_base::cur);
 
@@ -165,10 +165,10 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
             body.seek(obj.offsetTable.fileListOffset);
             std::int32_t fileCount;
             body >> fileCount;
-            for (std::int32_t i = 0; i < fileCount; i++) {
+            for (auto i = 0; i < fileCount; i++) {
                 RMANFileFile file;
                 body >> file.offset;
-                std::int32_t nextFile = body.pos();
+                auto nextFile = body.pos();
                 body.seek(file.offset - 4, std::ios_base::cur);
 
                 body >> file.offsetTableOffset;
@@ -215,7 +215,7 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
                 else {
                     std::int32_t chunkCount;
                     body >> chunkCount;
-                    for (std::int32_t j = 0; j < fileCount; j++) {
+                    for (auto j = 0; j < fileCount; j++) {
                         std::int64_t chunk;
                         body >> chunk;
                         file.chunks.push_back(chunk);
@@ -232,14 +232,14 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
             body.seek(obj.offsetTable.folderListOffset);
             std::int32_t folderCount;
             body >> folderCount;
-            for (std::int32_t i = 0; i < folderCount; i++) {
+            for (auto i = 0; i < folderCount; i++) {
                 RMANFileFolder folder;
                 body >> folder.offset;
-                std::int32_t nextFolder = body.pos();
+                auto nextFolder = body.pos();
                 body.seek(folder.offset - 4, std::ios_base::cur);
 
                 body >> folder.offsetTableOffset;
-                std::int32_t resume = body.pos();
+                auto resume = body.pos();
                 body.seek(-folder.offsetTableOffset, std::ios_base::cur);
                 body >> folder.folderIdOffset;
                 body >> folder.parentIdOffset;
@@ -285,58 +285,69 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
     return is.ifs;
 }
 
-std::string toHex(std::int64_t val) {
+std::string toHex(std::int64_t const val) {
     std::stringstream ss;
     ss << std::uppercase << std::setfill('0') << std::setw(16) << std::hex << val;
     return ss.str();
 }
 
-std::string cdragon::rman::RMANFileHeader::idAsHex() const
+std::string RMANFileHeader::idAsHex() const
 {
     return toHex(this->manifestId);
 }
 
-std::string cdragon::rman::RMANFileBundleChunk::idAsHex() const
+std::string RMANFileBundleChunk::idAsHex() const
 {
     return toHex(this->chunkId);
 }
 
-std::string cdragon::rman::RMANFileBundle::idAsHex() const
+std::string RMANFileBundle::idAsHex() const
 {
     return toHex(this->bundleId);
 }
 
-std::string cdragon::rman::RMANFileLanguage::idAsHex() const
+std::string RMANFileLanguage::idAsHex() const
 {
     return toHex(this->languageId);
 }
 
-std::string cdragon::rman::RMANFileFile::fileIdAsHex() const
+std::string RMANFileFile::fileIdAsHex() const
 {
     return toHex(this->fileId);
 }
 
-std::string cdragon::rman::RMANFileFile::folderIdAsHex() const
+std::string RMANFileFile::folderIdAsHex() const
 {
     return toHex(this->folderId);
 }
 
-std::string cdragon::rman::RMANFileFile::languageIdAsHex() const
+std::string RMANFileFile::languageIdAsHex() const
 {
     return toHex(this->languageId);
 }
 
-std::string cdragon::rman::RMANFileFolder::folderIdAsHex() const
+std::string RMANFileFolder::folderIdAsHex() const
 {
     return toHex(this->folderId);
 }
 
-std::string cdragon::rman::RMANFileFolder::parentIdAsHex() const
+std::string RMANFileFolder::parentIdAsHex() const
 {
     return toHex(this->parentId);
 }
 
-std::string cdragon::rman::RMANFileFile::getFilePath(RMANFile& manifest) const
+std::vector<std::string> RMANFileFile::chunksAsHex() const
+{
+    std::vector<std::string> chunks;
+    for (auto& chunk : this->chunks)
+    {
+        chunks.push_back(toHex(chunk));
+    }
+
+    return chunks;
+}
+
+std::string RMANFileFile::getFilePath(RMANFile& manifest) const
 {
     auto output = this->name;
     RMANFileFolder parent;
@@ -361,9 +372,10 @@ std::string cdragon::rman::RMANFileFile::getFilePath(RMANFile& manifest) const
     return output;
 }
 
-void cdragon::rman::RMANFile::buildChunkMap()
+
+void RMANFile::buildChunkMap()
 {
-    for (auto& bundle : cdragon::rman::RMANFile::bundles) {
+    for (auto& bundle : bundles) {
         _bundleMap.insert(std::make_pair(bundle.bundleId, bundle));
 
         std::int64_t index = 0;

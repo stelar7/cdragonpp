@@ -1,8 +1,11 @@
 #pragma once
 
+#include "../../../libs/rapidjson/prettywriter.h"
 #include <istream>
 #include <vector>
 #include <map>
+
+std::string toHex(std::int64_t const val);
 
 namespace cdragon {
 
@@ -34,6 +37,20 @@ namespace cdragon {
             std::int32_t decompressedLength;
 
             std::string idAsHex() const;
+
+            template <typename Writer>
+            void Serialize(Writer& writer) const {
+                writer.StartObject();
+                writer.String("manifest_id");
+                writer.String(idAsHex().c_str());
+                writer.String("version");
+                writer.StartObject();
+                writer.String("major");
+                writer.Uint(version.major);
+                writer.String("minor");
+                writer.Uint(version.minor);
+                writer.EndObject();
+            }
         };
 
         class RMANFileOffsetTable {
@@ -74,6 +91,14 @@ namespace cdragon {
             std::int64_t chunkId;
 
             std::string idAsHex() const;
+
+            template <typename Writer>
+            void Serialize(Writer& writer) const {
+                writer.StartObject();
+                writer.String("chunk_id");
+                writer.String(idAsHex().c_str());
+                writer.EndObject();
+            };
         };
 
         class RMANFileBundle {
@@ -91,6 +116,21 @@ namespace cdragon {
             std::vector<RMANFileBundleChunk> chunks;
 
             std::string idAsHex() const;
+
+            template <typename Writer>
+            void Serialize(Writer& writer) const {
+                writer.StartObject();
+                writer.String("bundle_id");
+                writer.String(idAsHex().c_str());
+                writer.String("chunks");
+                writer.StartArray();
+                for (auto& chunk : chunks)
+                {
+                    writer.String(chunk.idAsHex().c_str());
+                }
+                writer.EndArray();
+                writer.EndObject();
+            };
         };
 
         class RMANFileLanguage {
@@ -108,6 +148,16 @@ namespace cdragon {
             std::string name;
 
             std::string idAsHex() const;
+
+            template <typename Writer>
+            void Serialize(Writer& writer) const {
+                writer.StartObject();
+                writer.String("language_id");
+                writer.String(idAsHex().c_str());
+                writer.String("name");
+                writer.String(name.c_str());
+                writer.EndObject();
+            };
         };
 
         class RMANFileFile {
@@ -163,6 +213,30 @@ namespace cdragon {
             std::string folderIdAsHex() const;
             std::string languageIdAsHex() const;
             std::string getFilePath(RMANFile& manifest) const;
+            std::vector<std::string> chunksAsHex() const;
+
+            template <typename Writer>
+            void Serialize(Writer& writer) const {
+                writer.StartObject();
+                writer.String("name");
+                writer.String(name.c_str());
+                writer.String("symlink_name");
+                writer.String(symlinkName.c_str());
+                writer.String("language_id");
+                writer.String(languageIdAsHex().c_str());
+                writer.String("folder_id");
+                writer.String(folderIdAsHex().c_str());
+                writer.String("filesize");
+                writer.Uint(fileSize);
+                writer.String("chunks");
+                writer.StartArray();
+                for(auto& chunk : chunks)
+                {
+                    writer.String(toHex(chunk).c_str());
+                }
+                writer.EndArray();
+                writer.EndObject();
+            };
         };
 
         class RMANFileFolder {
@@ -182,9 +256,21 @@ namespace cdragon {
 
             std::string folderIdAsHex() const;
             std::string parentIdAsHex() const;
+
+            template <typename Writer>
+            void Serialize(Writer& writer) const {
+                writer.StartObject();
+                writer.String("name");
+                writer.String(name.c_str());
+                writer.String("folder_id");
+                writer.String(folderIdAsHex().c_str());
+                writer.String("parent_id");
+                writer.String(parentIdAsHex().c_str());
+                writer.EndObject();
+            };
         };
 
-        class RMANFile {
+        class RMANFile { 
         public:
             RMANFile() : manifestHeader(RMANFileHeader()), offsetTable(RMANFileOffsetTable()) {};
 
@@ -209,6 +295,45 @@ namespace cdragon {
                 return _valid;
             }
 
+            template <typename Writer>
+            void Serialize(Writer& writer) const {
+                writer.StartObject();
+                writer.String("header");
+                manifestHeader.Serialize(writer);
+                
+                writer.String("bundles");
+                writer.StartArray();
+                for (auto& bundle : bundles)
+                {
+                    bundle.Serialize(writer);
+                }
+                writer.EndArray();
+
+                writer.String("languages");
+                writer.StartArray();
+                for (auto& language : languages)
+                {
+                    language.Serialize(writer);
+                }
+                writer.EndArray();
+
+                writer.String("files");
+                writer.StartArray();
+                for (auto& file : files)
+                {
+                    file.Serialize(writer);
+                }writer.EndArray();
+
+                writer.String("folders");
+                writer.StartArray();
+                for (auto& folder : folders)
+                {
+                    folder.Serialize(writer);
+                }
+                writer.EndArray();
+
+                writer.EndObject();
+            };
         private:
             bool _valid = false;
             std::map<std::int64_t, RMANFileBundle> _bundleMap;

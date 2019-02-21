@@ -24,7 +24,7 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
         is >> obj.header.major;
         is >> obj.header.minor;
 
-        std::int32_t fileCount = -1;
+        auto fileCount = -1;
 
         if (obj.header.major == 1) {
             WADHeader::v1 ver;
@@ -63,7 +63,7 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
             fileCount = ver.entryCount;
         }
 
-        for (std::int32_t i = 0; i < fileCount; i++) {
+        for (auto i = 0; i < fileCount; i++) {
 
             WADContentHeader content;
             WADContentHeader::v1 var;
