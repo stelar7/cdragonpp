@@ -1,7 +1,8 @@
+#include <unordered_map>
 #include <filesystem>
 #include <iostream>
 #include <fstream>
-#include <unordered_map>
+#include <regex>
 #include "../libs/rapidjson/istreamwrapper.h"
 #include "../libs/rapidjson/stringbuffer.h"
 #include "../libs/rapidjson/document.h"
@@ -16,6 +17,7 @@
 #include "util/WebDownloader.hpp"
 #include "util/DragonStream.hpp"
 #include "util/HashHandler.hpp"
+#include "util/ZSTDHandler.hpp"
 
 using namespace cdragon::wad;
 using namespace cdragon::rman;
@@ -59,13 +61,13 @@ void parseWADFile(
         hashes.merge(content);
     }
 
+    cdragon::crypto::ZSTDHandler zstd;
     std::cout << "Found " << wad.content.size() << " files!" << std::endl;
     for (auto& contentHeader : wad.content)
     {
         auto header = std::get<WADContentHeader::v2>(contentHeader.version);
         auto hash = header.pathHash;
         auto search = hashes.find(hash);
-
 
         if (unknown.getValue() == "only")
         {
@@ -83,10 +85,80 @@ void parseWADFile(
             }
         }
 
-        auto value = (search == hashes.end() ? header.hashAsHex() : search->second);
-        std::cout << value << std::endl;
-    }
+        auto output_filename = (search == hashes.end() ? header.hashAsHex() : search->second);
 
+        if (pattern.isSet())
+        {
+            std::regex rgx(pattern.getValue());
+            if (!std::regex_search(output_filename, rgx))
+            {
+                continue;
+            }
+        }
+
+        if (!output.isSet())
+        {
+            continue;
+        }
+
+        auto output_path = std::filesystem::path(output.getValue());
+        output_path /= output_filename;
+        
+        if (lazy.isSet()) {
+            if (std::filesystem::exists(output_path))
+            {
+                continue;
+            }
+        }
+
+        if (!std::filesystem::exists(output_path.parent_path()))
+        {
+            std::filesystem::create_directories(output_path.parent_path());
+        }
+
+        std::ofstream output_writer;
+        output_writer.open(output_path, std::ios::out | std::ios::binary, std::ios::trunc);
+
+        input_file.seek(header.offset);
+        std::vector<std::byte> data;
+        switch (header.compression) {
+            case NONE:
+            {
+                input_file.read(data, header.uncompressedSize);
+                break;
+            };
+
+            case GZIP: {
+                std::cout << "GZIPPED files are not supported atm!" << std::endl;
+                break;
+            };
+
+            case REFERENCE: {
+                std::int32_t data_size;
+                input_file.read(data_size);
+
+                std::string data_string;
+                input_file.read(data_string, data_size);
+                std::transform(data_string.begin(), data_string.end(), data.begin(), [](char c) {return std::byte(c); });
+                break;
+            };
+
+            case ZSTD: {
+                std::vector<std::byte> compressed;
+                input_file.read(data, header.compressedSize);
+                zstd.decompress(compressed, data);
+                break;
+            };
+
+            default:
+            {
+                std::cout << "Invalid file compression!" << std::endl;
+            };
+        }
+
+        output_writer.write(reinterpret_cast<char*>(data.data()), data.size() * sizeof(data.front()));
+        output_writer.close();
+    }
 }
 
 void parseRMANFile(
@@ -111,7 +183,7 @@ int main(const int argc, char** argv)
             SwitchArg wad("w", "wad", "enable wad parsing", false);
             ValueArg<std::string> wad_input("", "wad-input", "WAD file to extract", false, "", "string", cmd);
             ValueArg<std::string> wad_output("", "wad-output", "WAD content output directory", false, "./cdragon/wad", "string", cmd);
-            ValueArg<std::string> wad_pattern("", "wad-pattern", "extract only files matching pattern with shell-like wildcards", false, "", "string", cmd);
+            ValueArg<std::string> wad_pattern("", "wad-pattern", "extract only files matching regex pattern", false, "", "string", cmd);
             std::vector<std::string> unknown_options = { "yes", "no", "only" };
             ValuesConstraint<std::string>unknown_constraint(unknown_options);
             ValueArg<std::string> wad_unknown("", "wad-unknown", "control extraction of unknown files", false, "yes", &unknown_constraint, cmd);
@@ -134,16 +206,16 @@ int main(const int argc, char** argv)
                 "--wad-input", R"(C:\Users\Steffen\Downloads\extractedFiles2\Plugins\rcp-be-lol-game-data\default-assets.wad)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\game.json)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\lcu.json)",
-                //"--wad-unknown", "only"
-                // TODO: wad-lazy, wad-pattern, wad-output
-
+                "--wad-unknown", "only",
+                "--wad-output", R"(C:\Users\Steffen\Downloads\test)",
+                "--wad-lazy"
             };
             cmd.parse(test);
 
             if (wad.isSet())
             {
-                auto hashFiles = wad_hashes.getValue();
-                parseWADFile(wad_input, wad_output, wad_pattern, wad_unknown, wad_lazy, hashFiles);
+                auto hash_files = wad_hashes.getValue();
+                parseWADFile(wad_input, wad_output, wad_pattern, wad_unknown, wad_lazy, hash_files);
             }
 
             std::cin.get();

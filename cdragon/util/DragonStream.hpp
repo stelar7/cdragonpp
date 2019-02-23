@@ -73,11 +73,11 @@ namespace cdragon {
                 return *this;
             }
 
-            void seek(std::int32_t pos) {
+            void seek(const std::int32_t pos) {
                 ifs.seekg(pos);
             }
 
-            void seek(std::int32_t pos, std::ios_base::seekdir direction) {
+            void seek(const std::int32_t pos, const std::ios_base::seekdir direction) {
                 ifs.seekg(pos, direction);
             }
 
@@ -111,7 +111,7 @@ namespace cdragon {
                 return gptr() - eback();
             }
 
-            pos_type seekpos(pos_type sp, std::ios_base::openmode which) override {
+            pos_type seekpos(const pos_type sp, const std::ios_base::openmode which) override {
                 return seekoff(sp - pos_type(off_type(0)), std::ios_base::beg, which);
             }
         };
@@ -123,7 +123,7 @@ namespace cdragon {
             };
 
             template<typename T>
-            void read(T& v, std::int32_t size)
+            void read(T& v, const std::int32_t size)
             {
                 std::istream::read(reinterpret_cast<char*>(&v), size);
                 if (std::istream::fail()) {
@@ -155,11 +155,11 @@ namespace cdragon {
                 return *this;
             }
 
-            void seek(std::int32_t pos) {
+            void seek(const std::int32_t pos) {
                 std::istream::seekg(pos, std::ios_base::beg);
             }
 
-            void seek(std::int32_t pos, std::ios_base::seekdir direction) {
+            void seek(const  std::int32_t pos, const std::ios_base::seekdir direction) {
                 std::istream::seekg(pos, direction);
             }
 
