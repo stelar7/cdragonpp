@@ -5,5 +5,8 @@
 /enc_temp_*
 /cdragon/x64/Debug
 /libs
-/x64/Debug
+/x64
+/x64/Release
+/Release
+/cdragon/x64
 /cdragon/temp

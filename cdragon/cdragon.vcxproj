@@ -86,7 +86,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\Steffen\source\repos\cdragon\libs\zstd\include;C:\Users\Steffen\source\repos\cdragon\libs\curl\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Steffen\source\repos\cdragon\libs\tclap;C:\Users\Steffen\source\repos\cdragon\libs\zstd\include;C:\Users\Steffen\source\repos\cdragon\libs\curl\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\Steffen\source\repos\cdragon\libs\zstd\lib\x32;C:\Users\Steffen\source\repos\cdragon\libs\curl\lib\x32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -96,7 +96,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\Steffen\source\repos\cdragon\libs\zstd\include;C:\Users\Steffen\source\repos\cdragon\libs\curl\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Steffen\source\repos\cdragon\libs\tclap;C:\Users\Steffen\source\repos\cdragon\libs\zstd\include;C:\Users\Steffen\source\repos\cdragon\libs\curl\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\Steffen\source\repos\cdragon\libs\zstd\lib\x32;C:\Users\Steffen\source\repos\cdragon\libs\curl\lib\x32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

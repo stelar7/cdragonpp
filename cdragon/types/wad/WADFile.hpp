@@ -68,7 +68,7 @@ namespace cdragon {
                 std::string hashAsHex() const;
             };
 
-            class v2 : v1 {
+            class v2 : public v1 {
             public:
                 explicit v2(const v1 old) : v1(old), duplicate(0), paddding(0), sha256(0) {};
 
