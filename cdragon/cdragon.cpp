@@ -62,9 +62,28 @@ void parseWADFile(
     std::cout << "Found " << wad.content.size() << " files!" << std::endl;
     for (auto& contentHeader : wad.content)
     {
-        auto hash = std::get<WADContentHeader::v2>(contentHeader.version).pathHash;
+        auto header = std::get<WADContentHeader::v2>(contentHeader.version);
+        auto hash = header.pathHash;
         auto search = hashes.find(hash);
-        auto value = (search == hashes.end() ? std::to_string(hash) : search->second);
+
+
+        if (unknown.getValue() == "only")
+        {
+            if (search != hashes.end())
+            {
+                continue;
+            }
+        }
+
+        if (unknown.getValue() == "no")
+        {
+            if (search == hashes.end())
+            {
+                continue;
+            }
+        }
+
+        auto value = (search == hashes.end() ? header.hashAsHex() : search->second);
         std::cout << value << std::endl;
     }
 
@@ -112,9 +131,11 @@ int main(const int argc, char** argv)
 
             std::vector<std::string> test = {
                 "cdragon", "-w",
-                "--wad-input", R"(C:\Users\Steffen\Downloads\extractedFiles2\Plugins\rcp-fe-lol-summoner-icon-picker\assets.wad)",
+                "--wad-input", R"(C:\Users\Steffen\Downloads\extractedFiles2\Plugins\rcp-be-lol-game-data\default-assets.wad)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\game.json)",
-                "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\lcu.json)"
+                "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\lcu.json)",
+                //"--wad-unknown", "only"
+                // TODO: wad-lazy, wad-pattern, wad-output
 
             };
             cmd.parse(test);
