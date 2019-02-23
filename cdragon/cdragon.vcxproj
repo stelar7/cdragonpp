@@ -86,23 +86,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\Steffen\source\repos\cdragon\libs\tclap;C:\Users\Steffen\source\repos\cdragon\libs\zstd\include;C:\Users\Steffen\source\repos\cdragon\libs\curl\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Steffen\source\repos\cdragon\libs\zlib\include;C:\Users\Steffen\source\repos\cdragon\libs\tclap;C:\Users\Steffen\source\repos\cdragon\libs\zstd\include;C:\Users\Steffen\source\repos\cdragon\libs\curl\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\Steffen\source\repos\cdragon\libs\zstd\lib\x32;C:\Users\Steffen\source\repos\cdragon\libs\curl\lib\x32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>C:\Users\Steffen\source\repos\cdragon\libs\zstd\lib\x64;C:\Users\Steffen\source\repos\cdragon\libs\curl\lib\x64;$(LibraryPath)</LibraryPath>
-    <IncludePath>C:\Users\Steffen\source\repos\cdragon\libs\zstd\include;C:\Users\Steffen\source\repos\cdragon\libs\curl\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Steffen\source\repos\cdragon\libs\zlib\lib\x64;C:\Users\Steffen\source\repos\cdragon\libs\zstd\lib\x64;C:\Users\Steffen\source\repos\cdragon\libs\curl\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\Steffen\source\repos\cdragon\libs\zlib\include;C:\Users\Steffen\source\repos\cdragon\libs\zstd\include;C:\Users\Steffen\source\repos\cdragon\libs\curl\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\Steffen\source\repos\cdragon\libs\tclap;C:\Users\Steffen\source\repos\cdragon\libs\zstd\include;C:\Users\Steffen\source\repos\cdragon\libs\curl\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\Steffen\source\repos\cdragon\libs\zstd\lib\x32;C:\Users\Steffen\source\repos\cdragon\libs\curl\lib\x32;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\Steffen\source\repos\cdragon\libs\zlib\include;C:\Users\Steffen\source\repos\cdragon\libs\tclap;C:\Users\Steffen\source\repos\cdragon\libs\zstd\include;C:\Users\Steffen\source\repos\cdragon\libs\curl\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Steffen\source\repos\cdragon\libs\zlib\lib\x32;C:\Users\Steffen\source\repos\cdragon\libs\zstd\lib\x32;C:\Users\Steffen\source\repos\cdragon\libs\curl\lib\x32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>C:\Users\Steffen\source\repos\cdragon\libs\zstd\lib\x64;C:\Users\Steffen\source\repos\cdragon\libs\curl\lib\x64;$(LibraryPath)</LibraryPath>
-    <IncludePath>C:\Users\Steffen\source\repos\cdragon\libs\zstd\include;C:\Users\Steffen\source\repos\cdragon\libs\curl\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Steffen\source\repos\cdragon\libs\zlib\lib\x64;C:\Users\Steffen\source\repos\cdragon\libs\zstd\lib\x64;C:\Users\Steffen\source\repos\cdragon\libs\curl\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\Steffen\source\repos\cdragon\libs\zstd\include;C:\Users\Steffen\source\repos\cdragon\libs\zlib\include;C:\Users\Steffen\source\repos\cdragon\libs\curl\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -118,7 +118,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libcurl.dll.a;libzstd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcurl.dll.a;libzstd.lib;libz.a;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -136,7 +136,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libcurl.dll.a;libzstd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcurl.dll.a;libzstd.lib;libz.a;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -156,7 +156,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libcurl.dll.a;libzstd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcurl.dll.a;libzstd.lib;libz.a;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -178,7 +178,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libcurl.dll.a;libzstd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcurl.dll.a;libzstd.lib;libz.a;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

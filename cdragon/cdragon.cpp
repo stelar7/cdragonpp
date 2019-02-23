@@ -1,25 +1,12 @@
-#include <unordered_map>
 #include <filesystem>
 #include <iostream>
-#include <fstream>
-#include <regex>
-#include "../libs/rapidjson/istreamwrapper.h"
-#include "../libs/rapidjson/stringbuffer.h"
-#include "../libs/rapidjson/document.h"
-#include "../libs/rapidjson/writer.h"
 #include "../libs/tclap/SwitchArg.h"
 #include "../libs/tclap/ValueArg.h"
 #include "../libs/tclap/CmdLine.h"
-#include "types/rman/PatcherJsonFile.hpp"
 #include "types/rman/RMANFile.hpp"
-#include "types/wad/WADFile.hpp"
-#include "util/PlatformHandler.hpp"
 #include "util/WebDownloader.hpp"
-#include "util/DragonStream.hpp"
-#include "util/HashHandler.hpp"
-#include "util/ZSTDHandler.hpp"
+#include "types/wad/WADFile.hpp"
 
-using namespace cdragon::wad;
 using namespace cdragon::rman;
 using namespace cdragon::util;
 using namespace cdragon::web;
@@ -28,138 +15,6 @@ using namespace cdragon::web;
 #define TEST_WAD 0
 #define TEST_GET 0
 
-
-void parseWADFile(
-    TCLAP::ValueArg<std::string>& input,
-    TCLAP::ValueArg<std::string>& output,
-    TCLAP::ValueArg<std::string>& pattern,
-    TCLAP::ValueArg<std::string>& unknown,
-    TCLAP::SwitchArg& lazy,
-    std::vector<std::string>& hash_files
-)
-{
-    if (!input.isSet())
-    {
-        std::cout << "ERROR: " << "Missing input file!" << std::endl;
-        exit(0);
-    }
-
-    auto path = std::filesystem::path(input.getValue());
-    auto input_file = DragonInStream(path);
-    std::cout << "Starting parsing of: " << input.getValue() << std::endl;
-
-    WADFile wad;
-    input_file >> wad;
-    std::cout << input.getValue() << " parsed " << (wad ? "ok" : "bad") << "!" << std::endl;
-
-    std::cout << "Loading hashes" << std::endl;
-    std::unordered_map<std::int64_t, std::string> hashes;
-    for (auto& file : hash_files) {
-
-        std::cout << "Loading from " << file << std::endl;
-        auto content = HashHandler::loadFile(file);
-        hashes.merge(content);
-    }
-
-    cdragon::crypto::ZSTDHandler zstd;
-    std::cout << "Found " << wad.content.size() << " files!" << std::endl;
-    for (auto& contentHeader : wad.content)
-    {
-        auto header = std::get<WADContentHeader::v2>(contentHeader.version);
-        auto hash = header.pathHash;
-        auto search = hashes.find(hash);
-
-        if (unknown.getValue() == "only")
-        {
-            if (search != hashes.end())
-            {
-                continue;
-            }
-        }
-
-        if (unknown.getValue() == "no")
-        {
-            if (search == hashes.end())
-            {
-                continue;
-            }
-        }
-
-        auto output_filename = (search == hashes.end() ? header.hashAsHex() : search->second);
-
-        if (pattern.isSet())
-        {
-            std::regex rgx(pattern.getValue());
-            if (!std::regex_search(output_filename, rgx))
-            {
-                continue;
-            }
-        }
-
-        if (!output.isSet())
-        {
-            continue;
-        }
-
-        auto output_path = std::filesystem::path(output.getValue());
-        output_path /= output_filename;
-        
-        if (lazy.isSet()) {
-            if (std::filesystem::exists(output_path))
-            {
-                continue;
-            }
-        }
-
-        if (!std::filesystem::exists(output_path.parent_path()))
-        {
-            std::filesystem::create_directories(output_path.parent_path());
-        }
-
-        std::ofstream output_writer;
-        output_writer.open(output_path, std::ios::out | std::ios::binary, std::ios::trunc);
-
-        input_file.seek(header.offset);
-        std::vector<std::byte> data;
-        switch (header.compression) {
-            case NONE:
-            {
-                input_file.read(data, header.uncompressedSize);
-                break;
-            };
-
-            case GZIP: {
-                std::cout << "GZIPPED files are not supported atm!" << std::endl;
-                break;
-            };
-
-            case REFERENCE: {
-                std::int32_t data_size;
-                input_file.read(data_size);
-
-                std::string data_string;
-                input_file.read(data_string, data_size);
-                std::transform(data_string.begin(), data_string.end(), data.begin(), [](char c) {return std::byte(c); });
-                break;
-            };
-
-            case ZSTD: {
-                std::vector<std::byte> compressed;
-                input_file.read(data, header.compressedSize);
-                zstd.decompress(compressed, data);
-                break;
-            };
-
-            default:
-            {
-                std::cout << "Invalid file compression!" << std::endl;
-            };
-        }
-
-        output_writer.write(reinterpret_cast<char*>(data.data()), data.size() * sizeof(data.front()));
-        output_writer.close();
-    }
-}
 
 void parseRMANFile(
     std::vector<std::string>& languages
@@ -206,7 +61,7 @@ int main(const int argc, char** argv)
                 "--wad-input", R"(C:\Users\Steffen\Downloads\extractedFiles2\Plugins\rcp-be-lol-game-data\default-assets.wad)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\game.json)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\lcu.json)",
-                "--wad-unknown", "only",
+                "--wad-unknown", "yes",
                 "--wad-output", R"(C:\Users\Steffen\Downloads\test)",
                 "--wad-lazy"
             };
@@ -215,7 +70,7 @@ int main(const int argc, char** argv)
             if (wad.isSet())
             {
                 auto hash_files = wad_hashes.getValue();
-                parseWADFile(wad_input, wad_output, wad_pattern, wad_unknown, wad_lazy, hash_files);
+                cdragon::wad::WADFile::parseCommandline(wad_input, wad_output, wad_pattern, wad_unknown, wad_lazy, hash_files);
             }
 
             std::cin.get();

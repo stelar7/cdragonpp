@@ -3,6 +3,11 @@
 #include <vector>
 #include <variant>
 #include <istream>
+#include "../../../libs/tclap/ValueArg.h"
+
+namespace TCLAP {
+    class SwitchArg;
+}
 
 namespace cdragon {
     namespace util {
@@ -87,6 +92,14 @@ namespace cdragon {
             std::vector<WADContentHeader> content;
 
             friend std::istream& operator>>(cdragon::util::DragonInStream &is, WADFile &obj);
+            static void parseCommandline(
+                TCLAP::ValueArg<std::string>& input,
+                TCLAP::ValueArg<std::string>& output,
+                TCLAP::ValueArg<std::string>& pattern,
+                TCLAP::ValueArg<std::string>& unknown,
+                TCLAP::SwitchArg& lazy,
+                std::vector<std::string>& hash_files
+            );
 
             bool operator!() const
             {

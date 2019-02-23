@@ -1,8 +1,9 @@
 #pragma once
 #include <map>
 #include "../util/PlatformHandler.hpp"
-#include "../libs/rapidjson/error/error.h"
-#include "../libs/rapidjson/error/en.h"
+#include "../../libs/rapidjson/error/error.h"
+#include "../../libs/rapidjson/document.h"
+#include "../../libs/rapidjson/error/en.h"
 
 class HashHandler
 {
