@@ -124,6 +124,7 @@ void WADFile::parseCommandline(
     TCLAP::ValueArg<std::string>& pattern,
     TCLAP::ValueArg<std::string>& unknown,
     TCLAP::SwitchArg& lazy,
+    TCLAP::SwitchArg& list,
     std::vector<std::string>& hash_files
 )
 {
@@ -194,6 +195,11 @@ void WADFile::parseCommandline(
             }
         }
 
+        if(list.isSet())
+        {
+            std::cout << output_filename << std::endl;
+        }
+
         if (!output.isSet())
         {
             continue;
@@ -205,6 +211,7 @@ void WADFile::parseCommandline(
         if (lazy.isSet()) {
             if (std::filesystem::exists(output_path))
             {
+                std::cout << "File already exists! (skipping because --lazy is set)" << std::endl;
                 continue;
             }
         }
@@ -212,6 +219,12 @@ void WADFile::parseCommandline(
         if (!std::filesystem::exists(output_path.parent_path()))
         {
             std::filesystem::create_directories(output_path.parent_path());
+        }
+
+        if (std::filesystem::exists(output_path))
+        {
+            std::cout << "File already exists! (re-creating because --lazy isnt set)" << std::endl;
+            std::filesystem::remove(output_path);
         }
 
         std::ofstream output_writer;

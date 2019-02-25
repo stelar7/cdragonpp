@@ -34,6 +34,7 @@ int main(const int argc, char** argv)
             ValueArg<std::string> wad_unknown("", "wad-unknown", "Control extraction of unknown files", false, "yes", &unknown_constraint, cmd);
             SwitchArg wad_lazy("", "wad-lazy", "Don't overwrite files, assume they are already correctly extracted", false, cmd);
             MultiArg<std::string> wad_hashes("", "wad-hashes", "Files to load hashes from", false, "string", cmd);
+            SwitchArg wad_list("", "wad-list", "Output the list of files", false, cmd);
             mains.push_back(&wad);
 
             /*
@@ -66,30 +67,50 @@ int main(const int argc, char** argv)
             std::vector<std::string> type_options = { "game", "lcu", "both" };
             ValuesConstraint<std::string>type_constraints(type_options);
             ValueArg<std::string> rman_type("", "rman-type", "Type to download", false, "both", &type_constraints, cmd);
-            SwitchArg rman_lazy("", "rman-lazy", "Don't overwrite files, assume they are already correctly extracted", false, cmd);
+            SwitchArg rman_lazy_bundles("", "rman-lazy-bundles", "Don't overwrite bundles, assume they are already correctly extracted", false, cmd);
+            SwitchArg rman_lazy_files("", "rman-lazy-files", "Don't overwrite files, assume they are already correctly extracted", false, cmd);
             SwitchArg rman_list("", "rman-list", "Output the list of files", false, cmd);
             mains.push_back(&rman);
             cmd.xorAdd(mains);
+
+            //cmd.parse(argc, argv);
 
             std::vector<std::string> test = {
                 "cdragon", "-r",
                 "--rman-type", "game",
                 "--rman-pattern", "Vayne.cs_CZ",
                 "--rman-list",
+                "--rman-output", ".",
             };
 
-            cmd.parse(test);
-            //cmd.parse(argc, argv);
 
-            if (rman.isSet())
-            {
-                RMANFile::parseCommandline(rman_server, rman_region, rman_platform, rman_type, rman_output, rman_pattern, rman_lazy, rman_list);
-            }
+            std::vector<std::string> test2 = {
+                "cdragon", "-w",
+                "--wad-input", R"(C:\Users\Steffen\source\repos\cdragon\cdragon\DATA\FINAL\Champions\Vayne.cs_CZ.wad.client)",
+                "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\game.json)",
+                "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\lcu.json)",
+                "--wad-output", R"(C:\Users\Steffen\Downloads\test)",
+                "--wad-lazy",
+                "--wad-list",
+            };
 
-            if (wad.isSet())
+            std::vector < std::vector<std::string>> tests{ test, test2 };
+
+            for (auto& cmdln : tests)
             {
-                auto hash_files = wad_hashes.getValue();
-                WADFile::parseCommandline(wad_input, wad_output, wad_pattern, wad_unknown, wad_lazy, hash_files);
+                cmd.reset();
+                cmd.parse(cmdln);
+
+                if (rman.isSet())
+                {
+                    RMANFile::parseCommandline(rman_server, rman_region, rman_platform, rman_type, rman_output, rman_pattern, rman_lazy_files, rman_lazy_bundles, rman_list);
+                }
+
+                if (wad.isSet())
+                {
+                    auto hash_files = wad_hashes.getValue();
+                    WADFile::parseCommandline(wad_input, wad_output, wad_pattern, wad_unknown, wad_lazy, wad_list, hash_files);
+                }
             }
 
             std::cin.get();

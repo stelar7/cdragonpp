@@ -226,7 +226,7 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
                 else {
                     std::int32_t chunkCount;
                     body >> chunkCount;
-                    for (auto j = 0; j < fileCount; j++) {
+                    for (auto j = 0; j < chunkCount; j++) {
                         std::int64_t chunk;
                         body >> chunk;
                         file.chunks.push_back(chunk);
@@ -392,7 +392,7 @@ void RMANFile::buildChunkMap()
         for (auto & chunk : bundle.chunks) {
             RMANFileBundleChunkInfo chunkInfo(&bundle, &chunk, index, chunk.compressedSize);
 
-            _chunkMap.emplace(chunk.chunkId, chunkInfo);
+            _chunkMap.insert_or_assign(chunk.chunkId, chunkInfo);
             index += chunk.compressedSize;
         }
     }
@@ -411,13 +411,7 @@ std::set<std::string> getBundles(std::vector<std::pair<RMANFile*, RMANFileFile*>
 
         for (auto& chunk : file.chunks)
         {
-            std::cout << "CHUNK: " << std::to_string(chunk) << " (" << toHex(chunk) << ")" << std::endl;
-            
-            RMANFileBundleChunkInfo info = manifest._chunkMap.at(chunk);
-            std::int64_t bundle_id = info.bundle->bundleId;
-
-            std::cout << "BUNDLE: " << std::to_string(bundle_id) << " (" << toHex(bundle_id) << ")" << std::endl;
-
+            const auto info = manifest._chunkMap.at(chunk);
             bundleIds.insert(info.bundle->idAsHex());
         }
     }
@@ -425,14 +419,24 @@ std::set<std::string> getBundles(std::vector<std::pair<RMANFile*, RMANFileFile*>
     return bundleIds;
 }
 
-void download_bundles(std::set<std::string>& bundleIds, const std::filesystem::path& bundle_path)
+void download_bundles(std::set<std::string>& bundleIds, const std::filesystem::path& bundle_path, TCLAP::SwitchArg& lazy)
 {
-    cdragon::web::Downloader downloader;
+    const cdragon::web::Downloader downloader;
     for (auto& id : bundleIds)
     {
         auto bundle_string = id + ".bundle";
         auto url = "https://lol.dyn.riotcdn.net/channels/public/bundles/" + bundle_string;
         auto output_path = bundle_path / bundle_string;
+
+        if (lazy.isSet())
+        {
+            if (std::filesystem::exists(output_path))
+            {
+                std::cout << "Found already downloaded bundle: " << output_path << std::endl;
+                continue;
+            }
+        }
+
         downloader.downloadFile(url, output_path);
     }
 }
@@ -445,7 +449,8 @@ void RMANFile::parseCommandline(
     TCLAP::ValueArg<std::string>& type,
     TCLAP::ValueArg<std::string>& output,
     TCLAP::ValueArg<std::string>& pattern,
-    TCLAP::SwitchArg& lazy,
+    TCLAP::SwitchArg& lazy_file,
+    TCLAP::SwitchArg& lazy_bundle,
     TCLAP::SwitchArg& list
 )
 {
@@ -483,6 +488,12 @@ void RMANFile::parseCommandline(
         files.emplace_back(rman);
     }
 
+    // chunkmaps have pointers, and we need them to be valid when we lookup
+    for (auto& file : files)
+    {
+        file.buildChunkMap();
+    }
+
     std::cout << "Matching files to pattern" << std::endl;
     std::vector<std::pair<RMANFile*, RMANFileFile*>> extracts;
     std::regex rgx(pattern.getValue(), std::regex_constants::icase);
@@ -507,7 +518,7 @@ void RMANFile::parseCommandline(
     std::cout << "Fetching bundles" << std::endl;
     auto needed_bundles = getBundles(extracts);
     auto bundle_path = std::filesystem::path(output.getValue()) / "bundles";
-    download_bundles(needed_bundles, bundle_path);
+    download_bundles(needed_bundles, bundle_path, lazy_bundle);
 
     for (auto& tupl : extracts) {
 
@@ -528,9 +539,10 @@ void RMANFile::parseCommandline(
         auto output_path = std::filesystem::path(output.getValue());
         output_path /= output_filename;
 
-        if (lazy.isSet()) {
+        if (lazy_file.isSet()) {
             if (std::filesystem::exists(output_path))
             {
+                std::cout << "File already exists! (skipping because --lazy is set)" << std::endl;
                 continue;
             }
         }
@@ -540,30 +552,39 @@ void RMANFile::parseCommandline(
             std::filesystem::create_directories(output_path.parent_path());
         }
 
+        if (std::filesystem::exists(output_path))
+        {
+            std::cout << "File already exists! (re-creating because --lazy isnt set)" << std::endl;
+            std::filesystem::remove(output_path);
+        }
+
 
         std::cout << "Writing file " << file.name << std::endl;
 
         std::ofstream output_writer;
-        output_writer.open(output_path, std::ios::out | std::ios::binary, std::ios::trunc);
+        output_writer.open(output_path, std::ios::out | std::ios::binary | std::ios::app);
 
         auto current = manifest._chunkMap[file.chunks[0]];
+        auto inputPath = bundle_path / (current.bundle->idAsHex() + ".bundle");
+        DragonInStream input_reader(inputPath);
 
         ZSTDHandler zstd;
-        DragonInStream input_reader(bundle_path / (current.bundle->idAsHex() + ".bundle"));
-
         auto chunk_count = static_cast<std::int32_t>(file.chunks.size());
         for (auto i = 0; i < chunk_count; i++)
         {
             input_reader.seek(current.offset);
 
             std::vector<std::byte> compressed;
-            input_reader.read(compressed, current.compressedSize);
+            input_reader.read(compressed, current.chunk->compressedSize);
 
             std::vector<std::byte> uncompressed;
+            uncompressed.resize(current.chunk->uncompressedSize);
+
+            // this fails on incomplete frames..? (i == 30)
             zstd.decompress(compressed, uncompressed);
             output_writer.write(reinterpret_cast<char*>(uncompressed.data()), uncompressed.size() * sizeof(uncompressed.front()));
 
-            if ((i + 1) > chunk_count)
+            if ((i + 1) >= chunk_count)
             {
                 break;
             }

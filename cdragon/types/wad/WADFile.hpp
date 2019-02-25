@@ -98,6 +98,7 @@ namespace cdragon {
                 TCLAP::ValueArg<std::string>& pattern,
                 TCLAP::ValueArg<std::string>& unknown,
                 TCLAP::SwitchArg& lazy,
+                TCLAP::SwitchArg& list,
                 std::vector<std::string>& hash_files
             );
 

@@ -310,7 +310,8 @@ namespace cdragon {
                 TCLAP::ValueArg<std::string>& type,
                 TCLAP::ValueArg<std::string>& output,
                 TCLAP::ValueArg<std::string>& pattern,
-                TCLAP::SwitchArg& lazy,
+                TCLAP::SwitchArg& lazy_file,
+                TCLAP::SwitchArg& lazy_bundle,
                 TCLAP::SwitchArg& list
             );
 
