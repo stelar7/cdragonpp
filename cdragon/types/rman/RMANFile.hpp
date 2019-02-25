@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../../../libs/rapidjson/prettywriter.h"
+#include "../../../libs/tclap/SwitchArg.h"
+#include "../../../libs/tclap/ValueArg.h"
 #include <istream>
 #include <vector>
 #include <map>
@@ -64,19 +66,6 @@ namespace cdragon {
             std::int32_t unknownOffset;
         };
 
-        class RMANFileBundleChunkInfo {
-        public:
-            std::int64_t bundleId;
-            std::int64_t chunkId;
-            std::int64_t offset;
-            std::int64_t compressedSize;
-            RMANFileBundleChunkInfo(const std::int64_t bundle, const std::int64_t chunk, const std::int64_t off, const std::int64_t compressed) :
-                bundleId(bundle),
-                chunkId(chunk),
-                offset(off),
-                compressedSize(compressed) {};
-
-        };
 
         class RMANFileBundleChunk {
         public:
@@ -230,7 +219,7 @@ namespace cdragon {
                 writer.Uint(fileSize);
                 writer.String("chunks");
                 writer.StartArray();
-                for(auto& chunk : chunks)
+                for (auto& chunk : chunks)
                 {
                     writer.String(toHex(chunk).c_str());
                 }
@@ -270,7 +259,24 @@ namespace cdragon {
             };
         };
 
-        class RMANFile { 
+        class RMANFileBundleChunkInfo {
+        public:
+            RMANFileBundle* bundle;
+            RMANFileBundleChunk* chunk;
+            std::int32_t offset;
+            std::int32_t compressedSize;
+
+            RMANFileBundleChunkInfo() = default;
+
+            RMANFileBundleChunkInfo(RMANFileBundle* bundle, RMANFileBundleChunk* chunk, const std::int32_t off, const std::int32_t compressed) :
+                bundle(bundle),
+                chunk(chunk),
+                offset(off),
+                compressedSize(compressed) {};
+
+        };
+
+        class RMANFile {
         public:
             RMANFile() : manifestHeader(RMANFileHeader()), offsetTable(RMANFileOffsetTable()) {};
 
@@ -282,6 +288,8 @@ namespace cdragon {
             std::vector<RMANFileLanguage> languages;
             std::vector<RMANFileFile> files;
             std::vector<RMANFileFolder> folders;
+
+            std::map<std::int64_t, RMANFileBundleChunkInfo> _chunkMap;
 
             friend std::istream& operator>>(cdragon::util::DragonInStream &is, RMANFile &obj);
 
@@ -295,12 +303,23 @@ namespace cdragon {
                 return _valid;
             }
 
+            static void parseCommandline(
+                TCLAP::ValueArg<std::string>& server,
+                TCLAP::ValueArg<std::string>& region,
+                TCLAP::ValueArg<std::string>& platform,
+                TCLAP::ValueArg<std::string>& type,
+                TCLAP::ValueArg<std::string>& output,
+                TCLAP::ValueArg<std::string>& pattern,
+                TCLAP::SwitchArg& lazy,
+                TCLAP::SwitchArg& list
+            );
+
             template <typename Writer>
             void Serialize(Writer& writer) const {
                 writer.StartObject();
                 writer.String("header");
                 manifestHeader.Serialize(writer);
-                
+
                 writer.String("bundles");
                 writer.StartArray();
                 for (auto& bundle : bundles)
@@ -336,9 +355,6 @@ namespace cdragon {
             };
         private:
             bool _valid = false;
-            std::map<std::int64_t, RMANFileBundle> _bundleMap;
-            std::map<std::int64_t, RMANFileBundleChunkInfo> _chunkMap;
-
             void buildChunkMap();
         };
     }

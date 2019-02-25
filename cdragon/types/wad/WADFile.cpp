@@ -187,7 +187,7 @@ void WADFile::parseCommandline(
 
         if (pattern.isSet())
         {
-            std::regex rgx(pattern.getValue());
+            std::regex rgx(pattern.getValue(), std::regex_constants::icase);
             if (!std::regex_search(output_filename, rgx))
             {
                 continue;

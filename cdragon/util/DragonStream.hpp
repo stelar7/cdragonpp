@@ -18,8 +18,8 @@ namespace cdragon {
             DragonInStream& operator=(DragonInStream& other) = delete;
             DragonInStream& operator=(DragonInStream&& other) = delete;
 
+            std::basic_ifstream<char> ifs;
 
-            std::ifstream ifs;
             explicit DragonInStream(const std::filesystem::path& path) : ifs(std::ifstream(path, std::ios::binary)) {};
 
             explicit DragonInStream(std::string& url) {
@@ -85,15 +85,26 @@ namespace cdragon {
                 return ifs.tellg();
             }
 
+            void open(std::filesystem::path& path)
+            {
+                ifs.open(path);
+            }
+
         private:
             web::Downloader getter;
             std::vector<std::filesystem::path> paths;
-            std::int64_t _counter = 0;
         };
 
         class membuf final : public std::basic_streambuf<char> {
         public:
+            membuf() = default;
+
             explicit membuf(std::vector<std::byte> &data) {
+                this->setg(reinterpret_cast<char*>(data.data()), reinterpret_cast<char*>(data.data()), reinterpret_cast<char*>(data.data()) + data.size());
+            }
+
+            explicit membuf(std::string data)
+            {
                 this->setg(reinterpret_cast<char*>(data.data()), reinterpret_cast<char*>(data.data()), reinterpret_cast<char*>(data.data()) + data.size());
             }
 
@@ -118,6 +129,18 @@ namespace cdragon {
 
         class DragonByteStream final : public std::istream {
         public:
+            DragonByteStream(DragonByteStream &other) = delete;
+            DragonByteStream(DragonByteStream &&other) = delete;
+            DragonByteStream& operator=(DragonByteStream& other) = delete;
+            DragonByteStream& operator=(DragonByteStream&& other) = delete;
+            ~DragonByteStream() = default;
+
+
+            explicit DragonByteStream(std::string& url) : std::istream(&_buffer), _buffer(getter.downloadString(url)) {
+                // TODO: make this work.....
+                rdbuf(&_buffer);
+            };
+
             explicit DragonByteStream(std::vector<std::byte> &data) : std::istream(&_buffer), _buffer(data) {
                 rdbuf(&_buffer);
             };
@@ -168,6 +191,7 @@ namespace cdragon {
             }
 
         private:
+            web::Downloader getter;
             membuf _buffer;
         };
     }

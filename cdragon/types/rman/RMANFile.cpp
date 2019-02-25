@@ -1,9 +1,17 @@
 #include <sstream>
 #include <iomanip>
 #include <iostream>
-#include "RMANFile.hpp"
 #include "../../util/ZSTDHandler.hpp"
 #include "../../util/DragonStream.hpp"
+#include "../../util/WebDownloader.hpp"
+#include "../../../libs/tclap/ValueArg.h"
+#include "../../../libs/tclap/SwitchArg.h"
+#include "../../../libs/rapidjson/document.h"
+#include "../../../libs/rapidjson/istreamwrapper.h"
+#include "RMANFile.hpp"
+#include "PatcherJsonFile.hpp"
+#include <regex>
+#include <set>
 
 using namespace cdragon::crypto;
 using namespace cdragon::util;
@@ -98,10 +106,10 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
             std::int32_t bundleCount;
             body >> bundleCount;
             for (auto i = 0; i < bundleCount; i++) {
+
                 RMANFileBundle bundle;
                 body >> bundle.offset;
                 auto nextBundle = body.pos();
-
                 body.seek(bundle.offset - 4, std::ios_base::cur);
 
                 body >> bundle.offsetTableOffset;
@@ -109,16 +117,19 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
                 body >> bundle.bundleId;
 
                 if (bundle.headerSize > 12) {
-                    is.read(bundle.skipped, bundle.headerSize - 12);
+                    auto skip_size = bundle.headerSize - 12;
+                    body.read(bundle.skipped, skip_size);
                 }
 
                 std::int32_t chunkCount;
                 body >> chunkCount;
                 for (auto j = 0; j < chunkCount; j++) {
+
                     std::int32_t chunkOffset;
                     body >> chunkOffset;
+
                     auto nextChunk = body.pos();
-                    body.seek(chunkOffset - 4);
+                    body.seek(chunkOffset + nextChunk - 4);
 
                     RMANFileBundleChunk chunk;
                     body >> chunk.offsetTableOffset;
@@ -376,14 +387,197 @@ std::string RMANFileFile::getFilePath(RMANFile& manifest) const
 void RMANFile::buildChunkMap()
 {
     for (auto& bundle : bundles) {
-        _bundleMap.insert(std::make_pair(bundle.bundleId, bundle));
 
-        std::int64_t index = 0;
+        auto index = 0;
         for (auto & chunk : bundle.chunks) {
-            RMANFileBundleChunkInfo chunkInfo(bundle.bundleId, chunk.chunkId, index, chunk.compressedSize);
+            RMANFileBundleChunkInfo chunkInfo(&bundle, &chunk, index, chunk.compressedSize);
 
-            _chunkMap.insert(std::make_pair(chunk.chunkId, chunkInfo));
+            _chunkMap.emplace(chunk.chunkId, chunkInfo);
             index += chunk.compressedSize;
         }
+    }
+}
+
+std::set<std::string> getBundles(std::vector<std::pair<RMANFile*, RMANFileFile*>>& extracts)
+{
+    std::set<std::string> bundleIds;
+
+    for (auto& tupl : extracts)
+    {
+        auto manifest = *tupl.first;
+        auto file = *tupl.second;
+
+        std::cout << file.name << std::endl;
+
+        for (auto& chunk : file.chunks)
+        {
+            std::cout << "CHUNK: " << std::to_string(chunk) << " (" << toHex(chunk) << ")" << std::endl;
+            
+            RMANFileBundleChunkInfo info = manifest._chunkMap.at(chunk);
+            std::int64_t bundle_id = info.bundle->bundleId;
+
+            std::cout << "BUNDLE: " << std::to_string(bundle_id) << " (" << toHex(bundle_id) << ")" << std::endl;
+
+            bundleIds.insert(info.bundle->idAsHex());
+        }
+    }
+
+    return bundleIds;
+}
+
+void download_bundles(std::set<std::string>& bundleIds, const std::filesystem::path& bundle_path)
+{
+    cdragon::web::Downloader downloader;
+    for (auto& id : bundleIds)
+    {
+        auto bundle_string = id + ".bundle";
+        auto url = "https://lol.dyn.riotcdn.net/channels/public/bundles/" + bundle_string;
+        auto output_path = bundle_path / bundle_string;
+        downloader.downloadFile(url, output_path);
+    }
+}
+
+
+void RMANFile::parseCommandline(
+    TCLAP::ValueArg<std::string>& server,
+    TCLAP::ValueArg<std::string>& region,
+    TCLAP::ValueArg<std::string>& platform,
+    TCLAP::ValueArg<std::string>& type,
+    TCLAP::ValueArg<std::string>& output,
+    TCLAP::ValueArg<std::string>& pattern,
+    TCLAP::SwitchArg& lazy,
+    TCLAP::SwitchArg& list
+)
+{
+    std::cout << "Downloading patcher manifest" << std::endl;
+    web::Downloader downloader;
+    auto url = "https://lol.dyn.riotcdn.net/channels/public/" + server.getValue() + "-" + region.getValue() + "-" + platform.getValue() + ".json";
+    auto patcher_manifest = downloader.downloadString(url);
+
+    std::cout << "Parsing manifest" << std::endl;
+    rapidjson::Document d;
+    d.Parse(patcher_manifest.c_str());
+    auto jsonval = PatcherJson(d);
+
+
+    std::vector<RMANFile> files;
+    if (type.getValue() == "game" || type.getValue() == "both")
+    {
+        std::cout << "Starting parsing of game manifest: " << jsonval.game_patch_url << std::endl;
+        auto file = DragonInStream(jsonval.game_patch_url);
+
+        RMANFile rman;
+        file >> rman;
+
+        files.emplace_back(rman);
+    }
+
+    if (type.getValue() == "lcu" || type.getValue() == "both")
+    {
+        std::cout << "Starting parsing of lcu manifest: " << jsonval.client_patch_url << std::endl;
+        auto file = DragonInStream(jsonval.client_patch_url);
+
+        RMANFile rman;
+        file >> rman;
+
+        files.emplace_back(rman);
+    }
+
+    std::cout << "Matching files to pattern" << std::endl;
+    std::vector<std::pair<RMANFile*, RMANFileFile*>> extracts;
+    std::regex rgx(pattern.getValue(), std::regex_constants::icase);
+    for (auto& rman : files) {
+        for (auto& file : rman.files)
+        {
+            if (pattern.isSet())
+            {
+                auto fullPath = file.getFilePath(rman);
+                if (std::regex_search(fullPath, rgx))
+                {
+                    extracts.emplace_back(&rman, &file);
+                }
+            }
+            else
+            {
+                extracts.emplace_back(&rman, &file);
+            }
+        }
+    }
+
+    std::cout << "Fetching bundles" << std::endl;
+    auto needed_bundles = getBundles(extracts);
+    auto bundle_path = std::filesystem::path(output.getValue()) / "bundles";
+    download_bundles(needed_bundles, bundle_path);
+
+    for (auto& tupl : extracts) {
+
+        auto manifest = *tupl.first;
+        auto file = *tupl.second;
+        auto output_filename = file.getFilePath(manifest);
+
+        if (list.isSet())
+        {
+            std::cout << output_filename << std::endl;
+        }
+
+        if (!output.isSet())
+        {
+            continue;
+        }
+
+        auto output_path = std::filesystem::path(output.getValue());
+        output_path /= output_filename;
+
+        if (lazy.isSet()) {
+            if (std::filesystem::exists(output_path))
+            {
+                continue;
+            }
+        }
+
+        if (!std::filesystem::exists(output_path.parent_path()))
+        {
+            std::filesystem::create_directories(output_path.parent_path());
+        }
+
+
+        std::cout << "Writing file " << file.name << std::endl;
+
+        std::ofstream output_writer;
+        output_writer.open(output_path, std::ios::out | std::ios::binary, std::ios::trunc);
+
+        auto current = manifest._chunkMap[file.chunks[0]];
+
+        ZSTDHandler zstd;
+        DragonInStream input_reader(bundle_path / (current.bundle->idAsHex() + ".bundle"));
+
+        auto chunk_count = static_cast<std::int32_t>(file.chunks.size());
+        for (auto i = 0; i < chunk_count; i++)
+        {
+            input_reader.seek(current.offset);
+
+            std::vector<std::byte> compressed;
+            input_reader.read(compressed, current.compressedSize);
+
+            std::vector<std::byte> uncompressed;
+            zstd.decompress(compressed, uncompressed);
+            output_writer.write(reinterpret_cast<char*>(uncompressed.data()), uncompressed.size() * sizeof(uncompressed.front()));
+
+            if ((i + 1) > chunk_count)
+            {
+                break;
+            }
+
+            auto next = manifest._chunkMap[file.chunks[i + 1]];
+            if (current.bundle->bundleId != next.bundle->bundleId)
+            {
+                auto new_path = bundle_path / (next.bundle->idAsHex() + ".bundle");
+                input_reader.open(new_path);
+            }
+
+            current = next;
+        }
+
+        output_writer.close();
     }
 }
