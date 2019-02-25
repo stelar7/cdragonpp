@@ -5,7 +5,6 @@
 #include "../libs/tclap/ValueArg.h"
 #include "../libs/tclap/CmdLine.h"
 
-
 #include "types/rman/RMANFile.hpp"
 #include "types/wad/WADFile.hpp"
 
@@ -37,20 +36,7 @@ int main(const int argc, char** argv)
             SwitchArg wad_list("", "wad-list", "Output the list of files", false, cmd);
             mains.push_back(&wad);
 
-            /*
-        std::vector<std::string> test = {
-            "cdragon", "-w",
-            "--wad-input", R"(C:\Users\Steffen\Downloads\extractedFiles2\Plugins\rcp-be-lol-game-data\default-assets.wad)",
-            "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\game.json)",
-            "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\lcu.json)",
-            "--wad-unknown", "yes",
-            "--wad-pattern", ".",
-            "--wad-output", R"(C:\Users\Steffen\Downloads\test)",
-            "--wad-lazy"
-        };
-        */
-
-        // rman parsing
+            // rman parsing
             SwitchArg rman("r", "rman", "Enable rman parsing", false);
             ValueArg<std::string> rman_output("", "rman-output", "RMAN content output directory", false, storage.getValue() + "/rman", "string", cmd);
             MultiArg<std::string> rman_language("", "rman-language", "List of languages to parse", false, "string", cmd);
@@ -83,7 +69,7 @@ int main(const int argc, char** argv)
                 "--rman-output", ".",
             };
 
-
+            //TODO: add wildcard support to --wad-input
             std::vector<std::string> test2 = {
                 "cdragon", "-w",
                 "--wad-input", R"(C:\Users\Steffen\source\repos\cdragon\cdragon\DATA\FINAL\Champions\Vayne.cs_CZ.wad.client)",
@@ -114,21 +100,6 @@ int main(const int argc, char** argv)
             }
 
             std::cin.get();
-
-            /*
-
-            if (rman.isSet())
-            {
-                std::vector<std::string> langs = { "all" };
-                if (languages.isSet())
-                {
-                    langs = languages.getValue();
-                }
-
-                parseRMANFile(langs);
-            }
-
-            */
         }
         catch (ArgException& e)
         {
