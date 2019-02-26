@@ -28,7 +28,7 @@ namespace cdragon {
             WADHeader() :magic{ 0,0 }, major(0), minor(0) {}
 
             struct v1 {
-                v1() : entryOffset(0), entryCellSize(0), entryCount(0) {};
+                v1() : entryOffset(0), entryCellSize(0), entryCount(0){};
                 std::int16_t entryOffset;
                 std::int16_t entryCellSize;
                 std::int32_t entryCount;
@@ -62,7 +62,7 @@ namespace cdragon {
         public:
             class v1 {
             public:
-                v1() : pathHash(0), offset(0), compressedSize(0), uncompressedSize(0), compression(WADCompressionType::NONE) {};
+                v1() : pathHash(0), offset(0), compressedSize(0), uncompressedSize(0), compression(NONE) {};
 
                 std::int64_t pathHash;
                 std::int32_t offset;
@@ -91,7 +91,7 @@ namespace cdragon {
             WADHeader header;
             std::vector<WADContentHeader> content;
 
-            friend std::istream& operator>>(cdragon::util::DragonInStream &is, WADFile &obj);
+            friend std::istream& operator>>(util::DragonInStream &is, WADFile &obj);
             static void parseCommandline(
                 TCLAP::ValueArg<std::string>& input,
                 TCLAP::ValueArg<std::string>& output,

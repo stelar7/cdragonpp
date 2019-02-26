@@ -45,7 +45,7 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
 
         if (obj.header.major == 2) {
             WADHeader::v2 ver;
-            is >> (ver.ECDSALength);
+            is >> ver.ECDSALength;
 
             is.read(ver.ECDSA, ver.ECDSALength);
             is.read(ver.ECDSAPadding, 83 - ver.ECDSALength);
@@ -111,7 +111,7 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
     return is.ifs;
 }
 
-std::string cdragon::wad::WADContentHeader::v1::hashAsHex() const
+std::string WADContentHeader::v1::hashAsHex() const
 {
     std::stringstream ss;
     ss << std::uppercase << std::setfill('0') << std::setw(16) << std::hex << this->pathHash;
@@ -134,144 +134,166 @@ void WADFile::parseCommandline(
         exit(0);
     }
 
-    auto path = std::filesystem::path(input.getValue());
-    auto input_file = DragonInStream(path);
-    std::cout << "Starting parsing of: " << input.getValue() << std::endl;
-
-    WADFile wad;
-    input_file >> wad;
-    std::cout << input.getValue() << " parsed " << (wad ? "ok" : "bad") << "!" << std::endl;
-
-    std::cout << "Loading hashes" << std::endl;
-    std::unordered_map<std::int64_t, std::string> hashes;
-    for (auto& file : hash_files) {
-
-        std::cout << "Loading from " << file << std::endl;
-        auto content = HashHandler::loadFile(file);
-        hashes.merge(content);
+    std::vector<std::filesystem::path> parse_files;
+    if (!std::filesystem::is_directory(input.getValue()))
+    {
+        std::cout << "Input is file, parsing single!" << std::endl;
+        parse_files.emplace_back(std::filesystem::path(input.getValue()));
+    }
+    else
+    {
+        std::cout << "Input is folder, parsing recursive!" << std::endl;
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(input.getValue()))
+        {
+            const auto extension = entry.path().extension();
+            if (".wad" == extension || ".client" == extension)
+            {
+                std::cout << "Found input file: " << entry.path() << std::endl;
+                parse_files.push_back(entry.path());
+            }
+        }
     }
 
-    cdragon::crypto::ZSTDHandler zstd;
-    cdragon::crypto::GZIPHandler gzip;
+    for (const auto& path : parse_files) {
 
-    auto count = 0;
-    auto interval = static_cast<std::int32_t>(floor(wad.content.size() / 10));
-    std::cout << "Found " << wad.content.size() << " files!" << std::endl;
-    for (auto& contentHeader : wad.content)
-    {
-        if (wad.content.size() > 1500 && ((++count) % interval) == 0)
-        {
-            std::cout << count << "/" << wad.content.size() << std::endl;
+        auto input_file = DragonInStream(path);
+        std::cout << "Starting parsing of: " << path << std::endl;
+
+        WADFile wad;
+        input_file >> wad;
+        std::cout << path << " parsed " << (wad ? "ok" : "bad") << "!" << std::endl;
+
+        std::cout << "Loading hashes" << std::endl;
+        std::unordered_map<std::int64_t, std::string> hashes;
+        for (auto& file : hash_files) {
+
+            std::cout << "Loading from " << file << std::endl;
+            auto content = HashHandler::loadFile(file);
+            hashes.merge(content);
         }
 
-        auto header = std::get<WADContentHeader::v2>(contentHeader.version);
-        auto hash = header.pathHash;
-        auto search = hashes.find(hash);
+        crypto::ZSTDHandler zstd;
+        crypto::GZIPHandler gzip;
 
-        if (unknown.getValue() == "only")
+        auto count = 0;
+        auto interval = static_cast<std::int32_t>(floor(wad.content.size() / 10));
+        std::cout << "Found " << wad.content.size() << " files before filtering!" << std::endl;
+        for (auto& contentHeader : wad.content)
         {
-            if (search != hashes.end())
+            if (wad.content.size() > 1500 && ((++count) % interval) == 0)
+            {
+                std::cout << count << "/" << wad.content.size() << std::endl;
+            }
+
+            auto header = std::get<WADContentHeader::v2>(contentHeader.version);
+            auto hash = header.pathHash;
+            auto search = hashes.find(hash);
+
+            if (unknown.getValue() == "only")
+            {
+                if (search != hashes.end())
+                {
+                    continue;
+                }
+            }
+
+            if (unknown.getValue() == "no")
+            {
+                if (search == hashes.end())
+                {
+                    continue;
+                }
+            }
+
+            auto output_filename = (search == hashes.end() ? "unknown/" + header.hashAsHex() : search->second);
+
+            if (pattern.isSet())
+            {
+                std::regex rgx(pattern.getValue(), std::regex_constants::icase);
+                if (!std::regex_search(output_filename, rgx))
+                {
+                    continue;
+                }
+            }
+
+            if (list.isSet())
+            {
+                std::cout << output_filename << std::endl;
+            }
+
+            if (!output.isSet())
             {
                 continue;
             }
-        }
 
-        if (unknown.getValue() == "no")
-        {
-            if (search == hashes.end())
-            {
-                continue;
+            auto output_path = std::filesystem::path(output.getValue());
+            output_path /= output_filename;
+
+            if (lazy.isSet()) {
+                if (std::filesystem::exists(output_path))
+                {
+                    std::cout << "File already exists! (skipping because --lazy is set)" << std::endl;
+                    continue;
+                }
             }
-        }
 
-        auto output_filename = (search == hashes.end() ? "unknown/" + header.hashAsHex() : search->second);
-
-        if (pattern.isSet())
-        {
-            std::regex rgx(pattern.getValue(), std::regex_constants::icase);
-            if (!std::regex_search(output_filename, rgx))
+            if (!std::filesystem::exists(output_path.parent_path()))
             {
-                continue;
+                std::filesystem::create_directories(output_path.parent_path());
             }
-        }
 
-        if(list.isSet())
-        {
-            std::cout << output_filename << std::endl;
-        }
-
-        if (!output.isSet())
-        {
-            continue;
-        }
-
-        auto output_path = std::filesystem::path(output.getValue());
-        output_path /= output_filename;
-
-        if (lazy.isSet()) {
             if (std::filesystem::exists(output_path))
             {
-                std::cout << "File already exists! (skipping because --lazy is set)" << std::endl;
-                continue;
+                std::cout << "File already exists! (re-creating because --lazy isnt set)" << std::endl;
+                remove(output_path);
             }
+
+            std::ofstream output_writer;
+            output_writer.open(output_path, std::ios::out | std::ios::binary, std::ios::trunc);
+
+            input_file.seek(header.offset);
+            std::vector<std::byte> data;
+            switch (header.compression) {
+                case NONE:
+                {
+                    input_file.read(data, header.uncompressedSize);
+                    break;
+                };
+
+                case GZIP: {
+                    std::vector<std::byte> compressed;
+                    input_file.read(data, header.compressedSize);
+
+                    data.resize(header.uncompressedSize);
+                    gzip.decompress(reinterpret_cast<char*>(compressed.data()), static_cast<int>(compressed.size()), reinterpret_cast<char*>(data.data()), header.uncompressedSize);
+                    break;
+                };
+
+                case REFERENCE: {
+                    std::int32_t data_size;
+                    input_file.read(data_size);
+
+                    std::string data_string;
+                    input_file.read(data_string, data_size);
+                    std::transform(data_string.begin(), data_string.end(), data.begin(), [](char c) {return std::byte(c); });
+                    break;
+                };
+
+                case ZSTD: {
+                    std::vector<std::byte> compressed;
+                    input_file.read(data, header.compressedSize);
+                    zstd.decompress(compressed, data);
+                    break;
+                };
+
+                default:
+                {
+                    std::cout << "Invalid file compression!" << std::endl;
+                };
+            }
+
+            output_writer.write(reinterpret_cast<char*>(data.data()), data.size() * sizeof(data.front()));
+            output_writer.close();
         }
-
-        if (!std::filesystem::exists(output_path.parent_path()))
-        {
-            std::filesystem::create_directories(output_path.parent_path());
-        }
-
-        if (std::filesystem::exists(output_path))
-        {
-            std::cout << "File already exists! (re-creating because --lazy isnt set)" << std::endl;
-            std::filesystem::remove(output_path);
-        }
-
-        std::ofstream output_writer;
-        output_writer.open(output_path, std::ios::out | std::ios::binary, std::ios::trunc);
-
-        input_file.seek(header.offset);
-        std::vector<std::byte> data;
-        switch (header.compression) {
-            case NONE:
-            {
-                input_file.read(data, header.uncompressedSize);
-                break;
-            };
-
-            case GZIP: {
-                std::vector<std::byte> compressed;
-                input_file.read(data, header.compressedSize);
-
-                data.resize(header.uncompressedSize);
-                gzip.decompress(reinterpret_cast<char*>(compressed.data()), static_cast<int>(compressed.size()), reinterpret_cast<char*>(data.data()), header.uncompressedSize);
-                break;
-            };
-
-            case REFERENCE: {
-                std::int32_t data_size;
-                input_file.read(data_size);
-
-                std::string data_string;
-                input_file.read(data_string, data_size);
-                std::transform(data_string.begin(), data_string.end(), data.begin(), [](char c) {return std::byte(c); });
-                break;
-            };
-
-            case ZSTD: {
-                std::vector<std::byte> compressed;
-                input_file.read(data, header.compressedSize);
-                zstd.decompress(compressed, data);
-                break;
-            };
-
-            default:
-            {
-                std::cout << "Invalid file compression!" << std::endl;
-            };
-        }
-
-        output_writer.write(reinterpret_cast<char*>(data.data()), data.size() * sizeof(data.front()));
-        output_writer.close();
     }
 }

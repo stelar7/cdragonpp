@@ -17,7 +17,7 @@ std::size_t writeData(void *ptr, const std::size_t size, const std::size_t nmemb
 }
 
 
-std::string cdragon::web::Downloader::downloadString(std::string& url) const {
+std::string Downloader::downloadString(std::string& url) const {
     std::string responseString;
 
     if (curl) {
@@ -25,13 +25,15 @@ std::string cdragon::web::Downloader::downloadString(std::string& url) const {
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseString);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeString);
 
+        std::cout << "DOWNLOADING: " << url << std::endl;
+
         const auto res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             std::cout << "CURL ERROR: " << url << std::endl;
             std::cout << "CURL ERROR: " << curl_easy_strerror(res) << std::endl;
         }
         else {
-            std::cout << "DOWNLOADING FILE TO MEMORY: " << url << std::endl;
+            std::cout << "DOWNLOADED FILE TO MEMORY: " << url << std::endl;
         }
 
         return responseString;
@@ -41,11 +43,11 @@ std::string cdragon::web::Downloader::downloadString(std::string& url) const {
 }
 
 
-bool cdragon::web::Downloader::downloadFile(std::string& url, std::filesystem::path& output) const {
+bool Downloader::downloadFile(std::string& url, std::filesystem::path& output) const {
     FILE* fp;
     auto status = true;
 
-    std::filesystem::create_directories(output.parent_path());
+    create_directories(output.parent_path());
     const auto err = fopen_s(&fp, output.string().c_str(), "wb");
     if (err != 0) {
         char errmsg[256];
@@ -60,6 +62,8 @@ bool cdragon::web::Downloader::downloadFile(std::string& url, std::filesystem::p
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeData);
 
+        std::cout << "DOWNLOADING FILE: " << url << std::endl;
+
         const auto res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             std::cout << "CURL ERROR: " << url << std::endl;
@@ -67,8 +71,7 @@ bool cdragon::web::Downloader::downloadFile(std::string& url, std::filesystem::p
             status = false;
         }
         else {
-            std::cout << "DOWNLOADING FILE: " << url << std::endl;
-            std::cout << "TO LOCAL DRIVE: " << std::filesystem::absolute(output).string() << std::endl;
+            std::cout << "FILE SAVED TO LOCAL DRIVE: " << absolute(output).string() << std::endl;
         }
 
         fclose(fp);

@@ -38,7 +38,7 @@ namespace cdragon {
 
                 std::error_code err;
                 for (auto& path : paths) {
-                    std::filesystem::remove_all(path, err);
+                    remove_all(path, err);
                     std::cout << err.message() << std::endl;
                 }
             }
@@ -179,10 +179,10 @@ namespace cdragon {
             }
 
             void seek(const std::int32_t pos) {
-                std::istream::seekg(pos, std::ios_base::beg);
+                std::istream::seekg(pos, beg);
             }
 
-            void seek(const  std::int32_t pos, const std::ios_base::seekdir direction) {
+            void seek(const  std::int32_t pos, const seekdir direction) {
                 std::istream::seekg(pos, direction);
             }
 

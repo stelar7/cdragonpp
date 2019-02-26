@@ -7,7 +7,7 @@
 #include <vector>
 #include <map>
 
-std::string toHex(std::int64_t const val);
+std::string toHex(std::int64_t val);
 
 namespace cdragon {
 
@@ -291,7 +291,7 @@ namespace cdragon {
 
             std::map<std::int64_t, RMANFileBundleChunkInfo> _chunkMap;
 
-            friend std::istream& operator>>(cdragon::util::DragonInStream &is, RMANFile &obj);
+            friend std::istream& operator>>(util::DragonInStream &is, RMANFile &obj);
 
             bool operator!() const
             {

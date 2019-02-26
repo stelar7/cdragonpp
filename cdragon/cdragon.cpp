@@ -61,22 +61,25 @@ int main(const int argc, char** argv)
 
             //cmd.parse(argc, argv);
 
+            //TODO: curl-multi, rman-bundle-verify
             std::vector<std::string> test = {
                 "cdragon", "-r",
                 "--rman-type", "game",
-                "--rman-pattern", "Vayne.cs_CZ",
+                "--rman-pattern", "Vayne",
                 "--rman-list",
+                //"--rman-lazy-bundles",
+                //"--rman-lazy-files",
                 "--rman-output", ".",
             };
 
-            //TODO: add wildcard support to --wad-input
             std::vector<std::string> test2 = {
                 "cdragon", "-w",
-                "--wad-input", R"(C:\Users\Steffen\source\repos\cdragon\cdragon\DATA\FINAL\Champions\Vayne.cs_CZ.wad.client)",
+                "--wad-input", R"(C:\Users\Steffen\source\repos\cdragon\cdragon\DATA\FINAL\Champions\)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\game.json)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\lcu.json)",
                 "--wad-output", R"(C:\Users\Steffen\Downloads\test)",
-                "--wad-lazy",
+                "--wad-pattern", "skin11",
+                //"--wad-lazy",
                 "--wad-list",
             };
 

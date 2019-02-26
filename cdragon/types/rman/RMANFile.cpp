@@ -402,16 +402,13 @@ std::set<std::string> getBundles(std::vector<std::pair<RMANFile*, RMANFileFile*>
 {
     std::set<std::string> bundleIds;
 
-    for (auto& tupl : extracts)
+    for (const auto& [manifest, file] : extracts)
     {
-        auto manifest = *tupl.first;
-        auto file = *tupl.second;
+        std::cout << file->name << std::endl;
 
-        std::cout << file.name << std::endl;
-
-        for (auto& chunk : file.chunks)
+        for (auto& chunk : file->chunks)
         {
-            const auto info = manifest._chunkMap.at(chunk);
+            const auto info = manifest->_chunkMap.at(chunk);
             bundleIds.insert(info.bundle->idAsHex());
         }
     }
@@ -430,7 +427,7 @@ void download_bundles(std::set<std::string>& bundleIds, const std::filesystem::p
 
         if (lazy.isSet())
         {
-            if (std::filesystem::exists(output_path))
+            if (exists(output_path))
             {
                 std::cout << "Found already downloaded bundle: " << output_path << std::endl;
                 continue;
@@ -464,6 +461,7 @@ void RMANFile::parseCommandline(
     d.Parse(patcher_manifest.c_str());
     auto jsonval = PatcherJson(d);
 
+    std::cout << "Fouind manifest version " << jsonval.version << std::endl;
 
     std::vector<RMANFile> files;
     if (type.getValue() == "game" || type.getValue() == "both")
@@ -474,7 +472,7 @@ void RMANFile::parseCommandline(
         RMANFile rman;
         file >> rman;
 
-        files.emplace_back(rman);
+        files.emplace_back(std::move(rman));
     }
 
     if (type.getValue() == "lcu" || type.getValue() == "both")
@@ -485,7 +483,7 @@ void RMANFile::parseCommandline(
         RMANFile rman;
         file >> rman;
 
-        files.emplace_back(rman);
+        files.emplace_back(std::move(rman));
     }
 
     // chunkmaps have pointers, and we need them to be valid when we lookup
@@ -520,11 +518,9 @@ void RMANFile::parseCommandline(
     auto bundle_path = std::filesystem::path(output.getValue()) / "bundles";
     download_bundles(needed_bundles, bundle_path, lazy_bundle);
 
-    for (auto& tupl : extracts) {
+    for (const auto& [manifest, file] : extracts) {
 
-        auto manifest = *tupl.first;
-        auto file = *tupl.second;
-        auto output_filename = file.getFilePath(manifest);
+        auto output_filename = file->getFilePath(*manifest);
 
         if (list.isSet())
         {
@@ -540,36 +536,36 @@ void RMANFile::parseCommandline(
         output_path /= output_filename;
 
         if (lazy_file.isSet()) {
-            if (std::filesystem::exists(output_path))
+            if (exists(output_path))
             {
                 std::cout << "File already exists! (skipping because --lazy is set)" << std::endl;
                 continue;
             }
         }
 
-        if (!std::filesystem::exists(output_path.parent_path()))
+        if (!exists(output_path.parent_path()))
         {
-            std::filesystem::create_directories(output_path.parent_path());
+            create_directories(output_path.parent_path());
         }
 
-        if (std::filesystem::exists(output_path))
+        if (exists(output_path))
         {
             std::cout << "File already exists! (re-creating because --lazy isnt set)" << std::endl;
             std::filesystem::remove(output_path);
         }
 
 
-        std::cout << "Writing file " << file.name << std::endl;
+        std::cout << "Writing file " << file->name << std::endl;
 
         std::ofstream output_writer;
         output_writer.open(output_path, std::ios::out | std::ios::binary | std::ios::app);
 
-        auto current = manifest._chunkMap[file.chunks[0]];
+        auto current = manifest->_chunkMap[file->chunks[0]];
         auto inputPath = bundle_path / (current.bundle->idAsHex() + ".bundle");
         DragonInStream input_reader(inputPath);
 
         ZSTDHandler zstd;
-        auto chunk_count = static_cast<std::int32_t>(file.chunks.size());
+        auto chunk_count = static_cast<std::int32_t>(file->chunks.size());
         for (auto i = 0; i < chunk_count; i++)
         {
             input_reader.seek(current.offset);
@@ -580,7 +576,6 @@ void RMANFile::parseCommandline(
             std::vector<std::byte> uncompressed;
             uncompressed.resize(current.chunk->uncompressedSize);
 
-            // this fails on incomplete frames..? (i == 30)
             zstd.decompress(compressed, uncompressed);
             output_writer.write(reinterpret_cast<char*>(uncompressed.data()), uncompressed.size() * sizeof(uncompressed.front()));
 
@@ -589,7 +584,7 @@ void RMANFile::parseCommandline(
                 break;
             }
 
-            auto next = manifest._chunkMap[file.chunks[i + 1]];
+            auto next = manifest->_chunkMap[file->chunks[i + 1]];
             if (current.bundle->bundleId != next.bundle->bundleId)
             {
                 auto new_path = bundle_path / (next.bundle->idAsHex() + ".bundle");
