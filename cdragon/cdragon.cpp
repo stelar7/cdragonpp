@@ -7,6 +7,7 @@
 
 #include "types/rman/RMANFile.hpp"
 #include "types/wad/WADFile.hpp"
+#include "util/WebDownloader.hpp"
 
 using namespace cdragon::util;
 using namespace cdragon::rman;
@@ -61,7 +62,7 @@ int main(const int argc, char** argv)
 
             //cmd.parse(argc, argv);
 
-            //TODO: curl-multi, rman-bundle-verify
+            //TODO: rman-bundle-verify
             std::vector<std::string> test = {
                 "cdragon", "-r",
                 "--rman-type", "game",
@@ -84,7 +85,6 @@ int main(const int argc, char** argv)
             };
 
             std::vector < std::vector<std::string>> tests{ test, test2 };
-
             for (auto& cmdln : tests)
             {
                 cmd.reset();

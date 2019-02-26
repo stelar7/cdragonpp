@@ -402,7 +402,7 @@ std::set<std::string> getBundles(std::vector<std::pair<RMANFile*, RMANFileFile*>
 {
     std::set<std::string> bundleIds;
 
-    for (const auto& [manifest, file] : extracts)
+    for (const auto&[manifest, file] : extracts)
     {
         std::cout << file->name << std::endl;
 
@@ -418,7 +418,7 @@ std::set<std::string> getBundles(std::vector<std::pair<RMANFile*, RMANFileFile*>
 
 void download_bundles(std::set<std::string>& bundleIds, const std::filesystem::path& bundle_path, TCLAP::SwitchArg& lazy)
 {
-    const cdragon::web::Downloader downloader;
+    std::vector<std::pair<std::string, std::filesystem::path>> datas;
     for (auto& id : bundleIds)
     {
         auto bundle_string = id + ".bundle";
@@ -433,9 +433,11 @@ void download_bundles(std::set<std::string>& bundleIds, const std::filesystem::p
                 continue;
             }
         }
-
-        downloader.downloadFile(url, output_path);
+        datas.emplace_back(std::make_pair(url, output_path));
     }
+
+    const cdragon::web::Downloader downloader;
+    downloader.downloadFiles(datas);
 }
 
 
@@ -518,7 +520,7 @@ void RMANFile::parseCommandline(
     auto bundle_path = std::filesystem::path(output.getValue()) / "bundles";
     download_bundles(needed_bundles, bundle_path, lazy_bundle);
 
-    for (const auto& [manifest, file] : extracts) {
+    for (const auto&[manifest, file] : extracts) {
 
         auto output_filename = file->getFilePath(*manifest);
 
