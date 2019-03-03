@@ -154,6 +154,15 @@ void WADFile::parseCommandline(
         }
     }
 
+    std::cout << "Loading hashes" << std::endl;
+    std::unordered_map<std::int64_t, std::string> hashes;
+    for (auto& file : hash_files) {
+
+        std::cout << "Loading from " << file << std::endl;
+        auto content = HashHandler::loadFile(file);
+        hashes.merge(content);
+    }
+
     for (const auto& path : parse_files) {
 
         auto input_file = DragonInStream(path);
@@ -163,13 +172,10 @@ void WADFile::parseCommandline(
         input_file >> wad;
         std::cout << path << " parsed " << (wad ? "ok" : "bad") << "!" << std::endl;
 
-        std::cout << "Loading hashes" << std::endl;
-        std::unordered_map<std::int64_t, std::string> hashes;
-        for (auto& file : hash_files) {
-
-            std::cout << "Loading from " << file << std::endl;
-            auto content = HashHandler::loadFile(file);
-            hashes.merge(content);
+        if(!wad)
+        {
+            std::cout << "Skipping invalid .wad file" << std::endl;
+            continue;
         }
 
         crypto::ZSTDHandler zstd;
