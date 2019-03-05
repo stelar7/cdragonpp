@@ -58,10 +58,12 @@ int main(const int argc, char** argv)
             SwitchArg rman_lazy_files("", "rman-lazy-files", "Don't overwrite files, assume they are already correctly extracted", false, cmd);
             SwitchArg rman_list("", "rman-list", "Output the list of files", false, cmd);
             mains.push_back(&rman);
+
+
             cmd.xorAdd(mains);
+            cmd.parse(argc, argv);
 
-            //cmd.parse(argc, argv);
-
+            /*
             //TODO: rman-bundle-verify
             std::vector<std::string> test = {
                 "cdragon", "-r",
@@ -101,6 +103,7 @@ int main(const int argc, char** argv)
                     WADFile::parseCommandline(wad_input, wad_output, wad_pattern, wad_unknown, wad_lazy, wad_list, hash_files);
                 }
             }
+            */
 
             std::cin.get();
         }

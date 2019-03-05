@@ -183,11 +183,16 @@ std::istream& cdragon::rman::operator>>(DragonInStream& is, RMANFile& obj)
                 body.seek(file.offset - 4, std::ios_base::cur);
 
                 body >> file.offsetTableOffset;
-
                 body >> file.nameOffset.offset;
-                if (!(file.nameOffset.data.offset > 0 && file.nameOffset.data.offset != 0x10200)) {
-                    body >> file.nameOffset;
+
+                int useCustomOffset;
+                body >> useCustomOffset;
+                body.seek(-4, std::ios_base::cur);
+
+                if (useCustomOffset > 100) {
+                    body >> file.nameOffset.offset;
                 }
+
                 body.seek(file.nameOffset.offset - 4, std::ios_base::cur);
                 std::int32_t nameSize;
                 body >> nameSize;
