@@ -154,13 +154,28 @@ void WADFile::parseCommandline(
         }
     }
 
-    std::cout << "Loading hashes" << std::endl;
     std::unordered_map<std::int64_t, std::string> hashes;
-    for (auto& file : hash_files) {
+    if (hash_files.empty())
+    {
+        std::cout << "Downloading hash lists..." << std::endl;
+        std::vector<std::string> hashUrls = { "https://github.com/stelar7/lol-parser/raw/master/src/main/resources/hashes/wad/game.json", "https://github.com/stelar7/lol-parser/raw/master/src/main/resources/hashes/wad/lcu.json" };
+        web::Downloader downloader;
+        for (auto& url : hashUrls) {
+            auto content = downloader.downloadString(url);
+            rapidjson::Document d;
+            d.Parse(content.c_str());
+            auto temp = HashHandler::hash_json_document(d);
+            hashes.merge(temp);
+        }
+    }
+    else {
+        std::cout << "Loading hashes" << std::endl;
+        for (auto& file : hash_files) {
 
-        std::cout << "Loading from " << file << std::endl;
-        auto content = HashHandler::loadFile(file);
-        hashes.merge(content);
+            std::cout << "Loading from " << file << std::endl;
+            auto content = HashHandler::loadFile(file);
+            hashes.merge(content);
+        }
     }
 
     for (const auto& path : parse_files) {
@@ -172,7 +187,7 @@ void WADFile::parseCommandline(
         input_file >> wad;
         std::cout << path << " parsed " << (wad ? "ok" : "bad") << "!" << std::endl;
 
-        if(!wad)
+        if (!wad)
         {
             std::cout << "Skipping invalid .wad file" << std::endl;
             continue;

@@ -39,7 +39,9 @@ namespace cdragon {
                 std::error_code err;
                 for (auto& path : paths) {
                     remove_all(path, err);
-                    std::cout << err.message() << std::endl;
+                    if (err) {
+                        std::cout << err.message() << std::endl;
+                    }
                 }
             }
 

@@ -7,7 +7,6 @@
 
 #include "types/rman/RMANFile.hpp"
 #include "types/wad/WADFile.hpp"
-#include "util/WebDownloader.hpp"
 
 using namespace cdragon::util;
 using namespace cdragon::rman;
@@ -42,13 +41,13 @@ int main(const int argc, char** argv)
             ValueArg<std::string> rman_output("", "rman-output", "RMAN content output directory", false, storage.getValue() + "/rman", "string", cmd);
             MultiArg<std::string> rman_language("", "rman-language", "List of languages to parse", false, "string", cmd);
             ValueArg<std::string> rman_pattern("", "rman-pattern", "Extract only files matching regex pattern", false, ".", "string", cmd);
-            std::vector<std::string> server_options = { "pbe", "live" };
+            std::vector<std::string> server_options = { "pbe", "live", "macpbe","maclive" };
             ValuesConstraint<std::string>server_constraint(server_options);
             ValueArg<std::string> rman_server("", "rman-server", "Server to download from", false, "pbe", &server_constraint, cmd);
             std::vector<std::string> region_options = { "pbe", "euw", "na" };
             ValuesConstraint<std::string>region_constraints(region_options);
             ValueArg<std::string> rman_region("", "rman-region", "Region to download from", false, "pbe", &region_constraints, cmd);
-            std::vector<std::string> platform_options = { "win" };
+            std::vector<std::string> platform_options = { "win", "mac" };
             ValuesConstraint<std::string>platform_constraints(platform_options);
             ValueArg<std::string> rman_platform("", "rman-platform", "Platform to download to", false, "win", &platform_constraints, cmd);
             std::vector<std::string> type_options = { "game", "lcu", "both" };
@@ -63,48 +62,41 @@ int main(const int argc, char** argv)
             cmd.xorAdd(mains);
             cmd.parse(argc, argv);
 
-            /*
-            //TODO: rman-bundle-verify
+             //TODO: rman-bundle-verify
             std::vector<std::string> test = {
                 "cdragon", "-r",
                 "--rman-type", "game",
-                "--rman-pattern", "Vayne",
+                "--rman-pattern", "Vayne.cs_CZ.wad",
                 "--rman-list",
                 //"--rman-lazy-bundles",
                 //"--rman-lazy-files",
-                "--rman-output", ".",
+                "--rman-output", R"(C:\Users\Steffen\Desktop\test\)",
             };
 
             std::vector<std::string> test2 = {
                 "cdragon", "-w",
-                "--wad-input", R"(C:\Users\Steffen\source\repos\cdragon\cdragon\DATA\FINAL\Champions\)",
+                "--wad-input", R"(C:\Users\Steffen\Desktop\test\DATA\FINAL\Champions\)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\game.json)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\lcu.json)",
-                "--wad-output", R"(C:\Users\Steffen\Downloads\test)",
+                "--wad-output", R"(C:\Users\Steffen\Desktop\test\output)",
                 "--wad-pattern", "skin11",
-                //"--wad-lazy",
-                "--wad-list",
             };
 
-            std::vector < std::vector<std::string>> tests{ test, test2 };
-            for (auto& cmdln : tests)
+            //cmd.parse(test);
+
+            if (rman.isSet())
             {
-                cmd.reset();
-                cmd.parse(cmdln);
-
-                if (rman.isSet())
-                {
-                    RMANFile::parseCommandline(rman_server, rman_region, rman_platform, rman_type, rman_output, rman_pattern, rman_lazy_files, rman_lazy_bundles, rman_list);
-                }
-
-                if (wad.isSet())
-                {
-                    auto hash_files = wad_hashes.getValue();
-                    WADFile::parseCommandline(wad_input, wad_output, wad_pattern, wad_unknown, wad_lazy, wad_list, hash_files);
-                }
+                RMANFile::parseCommandline(rman_server, rman_region, rman_platform, rman_type, rman_output, rman_pattern, rman_lazy_files, rman_lazy_bundles, rman_list);
             }
-            */
 
+            if (wad.isSet())
+            {
+                auto hash_files = wad_hashes.getValue();
+                WADFile::parseCommandline(wad_input, wad_output, wad_pattern, wad_unknown, wad_lazy, wad_list, hash_files);
+            }
+
+
+            std::cout << "Program ended, press any key to exit" << std::endl;
             std::cin.get();
         }
         catch (ArgException& e)

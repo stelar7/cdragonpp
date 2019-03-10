@@ -421,6 +421,8 @@ std::set<std::string> getBundles(std::vector<std::pair<RMANFile*, RMANFileFile*>
     return bundleIds;
 }
 
+#if 0
+// the CURL-multi impl is not flushing the files before the method returns, so we avoid using it for now...
 void download_bundles(std::set<std::string>& bundleIds, const std::filesystem::path& bundle_path, TCLAP::SwitchArg& lazy)
 {
     std::vector<std::pair<std::string, std::filesystem::path>> datas;
@@ -434,7 +436,7 @@ void download_bundles(std::set<std::string>& bundleIds, const std::filesystem::p
         {
             if (exists(output_path))
             {
-                std::cout << "Found already downloaded bundle: " << output_path << std::endl;
+                std::cout << "Skipping downloaded bundle: " << output_path << " because --rman-lazy-bundles is set!" << std::endl;
                 continue;
             }
         }
@@ -444,7 +446,29 @@ void download_bundles(std::set<std::string>& bundleIds, const std::filesystem::p
     const cdragon::web::Downloader downloader;
     downloader.downloadFiles(datas);
 }
+#else
+void download_bundles(std::set<std::string>& bundleIds, const std::filesystem::path& bundle_path, TCLAP::SwitchArg& lazy)
+{
+    const cdragon::web::Downloader downloader;
+    std::vector<std::pair<std::string, std::filesystem::path>> datas;
+    for (auto& id : bundleIds)
+    {
+        auto bundle_string = id + ".bundle";
+        auto url = "https://lol.dyn.riotcdn.net/channels/public/bundles/" + bundle_string;
+        auto output_path = bundle_path / bundle_string;
 
+        if (lazy.isSet())
+        {
+            if (exists(output_path))
+            {
+                std::cout << "Skipping downloaded bundle: " << output_path << " because --rman-lazy-bundles is set!" << std::endl;
+                continue;
+            }
+        }
+        downloader.downloadFile(url, output_path);
+    }
+}
+#endif
 
 void RMANFile::parseCommandline(
     TCLAP::ValueArg<std::string>& server,
@@ -545,7 +569,7 @@ void RMANFile::parseCommandline(
         if (lazy_file.isSet()) {
             if (exists(output_path))
             {
-                std::cout << "File already exists! (skipping because --lazy is set)" << std::endl;
+                std::cout << "File already exists! (skipping because --rman-lazy-files is set)" << std::endl;
                 continue;
             }
         }
@@ -557,8 +581,12 @@ void RMANFile::parseCommandline(
 
         if (exists(output_path))
         {
-            std::cout << "File already exists! (re-creating because --lazy isnt set)" << std::endl;
-            std::filesystem::remove(output_path);
+            std::cout << "File already exists! (re-creating because --rman-lazy-files isnt set)" << std::endl;
+            std::error_code error;
+            std::filesystem::remove(output_path, error);
+            if (error) {
+                std::cout << error.message() << std::endl;
+            }
         }
 
 
@@ -591,7 +619,7 @@ void RMANFile::parseCommandline(
                 break;
             }
 
-            auto next = manifest->_chunkMap[file->chunks[i + 1]];
+            auto next = manifest->_chunkMap[file->chunks[i + 1ull]];
             if (current.bundle->bundleId != next.bundle->bundleId)
             {
                 auto new_path = bundle_path / (next.bundle->idAsHex() + ".bundle");

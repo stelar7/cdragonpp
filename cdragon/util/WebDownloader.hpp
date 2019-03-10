@@ -16,7 +16,7 @@ namespace cdragon {
             Downloader& operator=(Downloader& other) = delete;
             Downloader& operator=(Downloader&& other) = delete;
 
-            Downloader() {
+            Downloader() : handles{} {
                 for (auto& handle : handles)
                 {
                     handle = curl_easy_init();
@@ -30,7 +30,7 @@ namespace cdragon {
                 }
 
                 multi_handle = curl_multi_init();
-                
+
             }
 
             ~Downloader() {

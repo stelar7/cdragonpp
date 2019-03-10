@@ -75,7 +75,10 @@ bool Downloader::downloadFile(std::string& url, std::filesystem::path& output) c
             std::cout << "FILE SAVED TO LOCAL DRIVE: " << absolute(output).string() << std::endl;
         }
 
-        fclose(fp);
+        if (fp != nullptr) {
+            fclose(fp);
+        }
+
         return status;
     }
 
@@ -83,6 +86,11 @@ bool Downloader::downloadFile(std::string& url, std::filesystem::path& output) c
 }
 
 bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesystem::path>>& urls) const {
+
+    if(urls.empty())
+    {
+        return true;
+    }
 
     FILE* fp[HANDLE_COUNT];
     auto running_handles = 0;
@@ -106,8 +114,8 @@ bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesyste
 
         curl_easy_setopt(handles[i], CURLOPT_WRITEDATA, fp[i]);
         curl_easy_setopt(handles[i], CURLOPT_WRITEFUNCTION, writeData);
-
         curl_multi_add_handle(multi_handle, handles[i]);
+
         std::advance(it, 1);
         if (it == urls.end())
         {
@@ -120,7 +128,6 @@ bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesyste
     while (running_handles)
     {
         struct timeval timeout {};
-        auto return_code = 0;
 
         fd_set fdread;
         fd_set fdwrite;
@@ -149,6 +156,9 @@ bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesyste
             break;
         }
 
+        // ReSharper disable once CppInitializedValueIsAlwaysRewritten
+        auto return_code = 0;
+
         if (maxfd == -1)
         {
 
@@ -174,7 +184,6 @@ bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesyste
             default: curl_multi_perform(multi_handle, &running_handles);
         }
 
-
         CURLMsg *msg;
         auto msg_count = 0;
 
@@ -183,32 +192,27 @@ bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesyste
             if (msg->msg == CURLMSG_DONE)
             {
                 auto index = 0;
-                auto found = false;
                 for (; index < HANDLE_COUNT; index++) {
-                    found = (msg->easy_handle == handles[index]);
-                    if (found)
+                    if (msg->easy_handle == handles[index])
                     {
                         break;
                     }
                 }
 
-                std::cout << "Download finished, " << running_handles << " active transfers remaining" << std::endl;
+                std::cout << "Download finished (" << running_handles << " active transfers remaining)" << std::endl;
+                if (it != urls.end())
+                {
+                    std::advance(it, 1);
+                }
 
                 if (it == urls.end())
                 {
                     break;
                 }
-                else
-                {
-                    std::advance(it, 1);
-                    if (it == urls.end())
-                    {
-                        break;
-                    }
-                }
+
+                fclose(fp[index]);
 
                 std::cout << "Starting download of " << it->first << std::endl;
-
                 std::filesystem::create_directories(it->second.parent_path());
                 const auto err = fopen_s(&fp[index], it->second.string().c_str(), "wb");
                 if (err != 0) {
@@ -223,7 +227,7 @@ bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesyste
                 curl_easy_setopt(handles[index], CURLOPT_WRITEDATA, fp[index]);
 
                 // re-adding the handle is needed for it to pick-up the changed state
-                curl_multi_remove_handle(multi_handle,handles[index]);
+                curl_multi_remove_handle(multi_handle, handles[index]);
                 curl_multi_add_handle(multi_handle, handles[index]);
 
                 // run atleast once so we update the handle count

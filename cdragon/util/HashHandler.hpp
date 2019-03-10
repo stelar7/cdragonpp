@@ -1,5 +1,4 @@
 #pragma once
-#include <map>
 #include "../util/PlatformHandler.hpp"
 #include "../../libs/rapidjson/error/error.h"
 #include "../../libs/rapidjson/document.h"
@@ -12,20 +11,25 @@ public:
     {
         using namespace  rapidjson;
 
-        std::string data = map_file_to_string(file);
+        auto data = map_file_to_string(file);
 
         Document d;
         d.Parse(data.c_str());
         if (d.HasParseError())
         {
-            auto error = ParseErrorCode(d.GetParseError());
+            const auto error = ParseErrorCode(d.GetParseError());
             fprintf(stderr, "JSON parse error: %s", GetParseError_En(error));
         }
 
+        return hash_json_document(d);
+    }
+
+    static std::unordered_map<std::int64_t, std::string> hash_json_document(rapidjson::Document& document)
+    {
         std::unordered_map<std::int64_t, std::string> content;
-        for (auto iter = d.MemberBegin(); iter != d.MemberEnd(); ++iter)
+        for (auto iter = document.MemberBegin(); iter != document.MemberEnd(); ++iter)
         {
-            auto key = iter->name.GetString();
+            const auto key = iter->name.GetString();
             auto key_int = static_cast<std::int64_t>(std::stoull(key, nullptr, 16));
             auto value = iter->value.GetString();
 
