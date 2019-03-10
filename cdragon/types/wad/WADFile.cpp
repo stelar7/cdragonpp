@@ -237,7 +237,7 @@ void WADFile::parseCommandline(
                 }
             }
 
-            if (list.isSet())
+            if (list.getValue())
             {
                 std::cout << output_filename << std::endl;
             }

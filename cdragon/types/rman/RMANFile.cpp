@@ -553,7 +553,7 @@ void RMANFile::parseCommandline(
 
         auto output_filename = file->getFilePath(*manifest);
 
-        if (list.isSet())
+        if (list.getValue())
         {
             std::cout << output_filename << std::endl;
         }
