@@ -2,7 +2,7 @@
 #include "../../libs/curl/include/curl.h"
 #include <filesystem>
 #include <iostream>
-#include <map>
+#include <thread>
 
 using namespace cdragon::web;
 
@@ -85,6 +85,25 @@ bool Downloader::downloadFile(std::string& url, std::filesystem::path& output) c
     throw std::exception("Failed to read from url!");
 }
 
+void push_handle(CURL* handle, FILE* fp, std::string& url, std::filesystem::path& file)
+{
+    std::cout << "Starting download of " << url << std::endl;
+
+    curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
+
+    std::filesystem::create_directories(file.parent_path());
+    const auto err = fopen_s(&fp, file.string().c_str(), "wb");
+    if (err != 0) {
+        char errmsg[256];
+        strerror_s(errmsg, 256, err);
+        std::cout << "FILE ERROR: Path: " << file.string() << std::endl;
+        std::cout << "FILE ERROR: Message: " << errmsg << std::endl;
+    }
+
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, fp);
+    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writeData);
+}
+
 bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesystem::path>>& urls) const {
 
     if(urls.empty())
@@ -98,22 +117,7 @@ bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesyste
     auto it = urls.begin();
     for (auto i = 0; i < HANDLE_COUNT; i++)
     {
-        std::cout << "Starting download of " << it->first << std::endl;
-
-        curl_easy_setopt(handles[i], CURLOPT_URL, it->first.c_str());
-
-        std::filesystem::create_directories(it->second.parent_path());
-        const auto err = fopen_s(&fp[i], it->second.string().c_str(), "wb");
-        if (err != 0) {
-            char errmsg[256];
-            strerror_s(errmsg, 256, err);
-            std::cout << "FILE ERROR: Path: " << it->second.string() << std::endl;
-            std::cout << "FILE ERROR: Message: " << errmsg << std::endl;
-            return false;
-        }
-
-        curl_easy_setopt(handles[i], CURLOPT_WRITEDATA, fp[i]);
-        curl_easy_setopt(handles[i], CURLOPT_WRITEFUNCTION, writeData);
+        push_handle(handles[i], fp[i], it->first, it->second);
         curl_multi_add_handle(multi_handle, handles[i]);
 
         std::advance(it, 1);
@@ -156,32 +160,19 @@ bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesyste
             break;
         }
 
-        // ReSharper disable once CppInitializedValueIsAlwaysRewritten
         auto return_code = 0;
-
         if (maxfd == -1)
         {
-
-#ifdef _WIN32
-#include "windows.h"
-
-            Sleep(100);
-            return_code = 0;
-#else
-            struct timeval wait = { 0, 100 * 1000 };
-            rc = select(0, NULL, NULL, NULL, &wait);
-#endif
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
         else
         {
             return_code = select(maxfd + 1, &fdread, &fdwrite, &fdexcep, &timeout);
         }
 
-        switch (return_code)
+        if(return_code != -1)
         {
-            case -1: break;
-            case 0:
-            default: curl_multi_perform(multi_handle, &running_handles);
+            curl_multi_perform(multi_handle, &running_handles);
         }
 
         CURLMsg *msg;
@@ -212,25 +203,13 @@ bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesyste
 
                 fclose(fp[index]);
 
-                std::cout << "Starting download of " << it->first << std::endl;
-                std::filesystem::create_directories(it->second.parent_path());
-                const auto err = fopen_s(&fp[index], it->second.string().c_str(), "wb");
-                if (err != 0) {
-                    char errmsg[256];
-                    strerror_s(errmsg, 256, err);
-                    std::cout << "FILE ERROR: Path: " << it->second.string() << std::endl;
-                    std::cout << "FILE ERROR: Message: " << errmsg << std::endl;
-                    return false;
-                }
-
-                curl_easy_setopt(handles[index], CURLOPT_URL, it->first.c_str());
-                curl_easy_setopt(handles[index], CURLOPT_WRITEDATA, fp[index]);
+                push_handle(handles[index], fp[index], it->first, it->second);
 
                 // re-adding the handle is needed for it to pick-up the changed state
                 curl_multi_remove_handle(multi_handle, handles[index]);
                 curl_multi_add_handle(multi_handle, handles[index]);
 
-                // run atleast once so we update the handle count
+                // update running count
                 curl_multi_perform(multi_handle, &running_handles);
             }
         }

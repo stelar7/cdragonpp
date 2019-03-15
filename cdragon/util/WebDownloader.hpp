@@ -34,12 +34,13 @@ namespace cdragon {
             }
 
             ~Downloader() {
-                curl_multi_cleanup(multi_handle);
-
-                for (auto& handle : handles)
+                for (auto handle : handles)
                 {
+                    curl_multi_remove_handle(multi_handle, handle);
                     curl_easy_cleanup(handle);
                 }
+
+                curl_multi_cleanup(multi_handle);
             }
 
             std::string downloadString(std::string& url) const;
