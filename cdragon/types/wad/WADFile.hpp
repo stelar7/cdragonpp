@@ -29,7 +29,7 @@ namespace cdragon {
                 case GZIP:  return "GZIP";
                 case REFERENCE:  return "REF";
                 case ZSTD:  return "ZSTD";
-                default: "NOT SPECIFIED IN TOSTRING!";
+                default: return "NOT SPECIFIED IN TOSTRING!";
             }
         }
 
@@ -85,21 +85,22 @@ namespace cdragon {
 
             class v2 : public v1 {
             public:
-                explicit v2(const v1 old) : v1(old), duplicate(0), paddding(0), sha256(0) {};
+                v2() : v2(v1()) {};
+                v2(const v1 old) : v1(old), duplicate(0), paddding(0), sha256(0) {};
 
                 std::uint8_t duplicate;
                 std::int16_t paddding;
                 std::int64_t sha256;
             };
 
-            std::variant<v1, v2> version;
+            v2 version;
         };
 
 
         class WADFile {
         public:
             WADHeader header;
-            std::vector<WADContentHeader> content;
+            std::vector<WADContentHeader::v2> content;
 
             friend std::istream& operator>>(util::DragonInStream &is, WADFile &obj);
             static void parseCommandline(

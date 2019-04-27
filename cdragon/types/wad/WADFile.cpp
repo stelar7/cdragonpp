@@ -72,26 +72,24 @@ std::istream& cdragon::wad::operator>>(DragonInStream& is, WADFile& obj)
 
         for (auto i = 0; i < fileCount; i++) {
 
-            WADContentHeader content;
-            WADContentHeader::v1 var;
+            WADContentHeader::v2 content;
 
-            is >> var.pathHash;
-            is >> var.offset;
-            is >> var.compressedSize;
-            is >> var.uncompressedSize;
+            is >> content.pathHash;
+            is >> content.offset;
+            is >> content.compressedSize;
+            is >> content.uncompressedSize;
 
             // is there a better way to do this? seems like there isnt (https://stackoverflow.com/questions/5633784/input-from-stream-to-enum-type)
-            is.read(var.compression, (obj.header.major > 1 ? sizeof(std::int8_t) : sizeof(std::int32_t)));
-            var.compression = static_cast<WADCompressionType>(var.compression & 0xFF);
+            is.read(content.compression, (obj.header.major > 1 ? sizeof(std::int8_t) : sizeof(std::int32_t)));
+            content.compression = static_cast<WADCompressionType>(content.compression & 0xFF);
 
-            content.version = var;
             if (obj.header.major > 1 && obj.header.major < 4) {
-                WADContentHeader::v2 var2(var);
+                WADContentHeader::v2 var2(content);
                 is >> var2.duplicate;
                 is >> var2.paddding;
                 is >> var2.sha256;
-
-                content.version = var2;
+                obj.content.push_back(var2);
+                continue;
             }
 
             obj.content.push_back(content);
@@ -199,14 +197,13 @@ void WADFile::parseCommandline(
         auto count = 0;
         auto interval = static_cast<std::int32_t>(floor(wad.content.size() / 10));
         std::cout << "Found " << wad.content.size() << " files before filtering!" << std::endl;
-        for (auto& contentHeader : wad.content)
+        for (auto& header : wad.content)
         {
             if (wad.content.size() > 1500 && ((++count) % interval) == 0)
             {
                 std::cout << count << "/" << wad.content.size() << std::endl;
             }
 
-            auto header = std::get<WADContentHeader::v2>(contentHeader.version);
             auto hash = header.pathHash;
             auto search = hashes.find(hash);
 
@@ -249,6 +246,7 @@ void WADFile::parseCommandline(
 
             auto output_path = std::filesystem::path(output.getValue());
             output_path /= output_filename;
+            output_path.make_preferred();
 
             if (lazy.isSet()) {
                 if (std::filesystem::exists(output_path))
@@ -263,14 +261,22 @@ void WADFile::parseCommandline(
                 std::filesystem::create_directories(output_path.parent_path());
             }
 
-            if (std::filesystem::exists(output_path))
-            {
-                std::cout << "File already exists! (re-creating because --lazy isnt set)" << std::endl;
-                remove(output_path);
+
+            std::error_code err;
+            std::filesystem::file_status status;
+
+            if (std::filesystem::is_symlink(output_path)) {
+                status = std::filesystem::symlink_status(output_path);
+            }
+            else {
+                status = std::filesystem::status(output_path, err);
             }
 
-            std::ofstream output_writer;
-            output_writer.open(output_path, std::ios::out | std::ios::binary, std::ios::trunc);
+            if (std::filesystem::exists(status))
+            {
+                std::cout << "File already exists! (re-creating because --lazy isnt set)" << std::endl;
+                std::filesystem::remove(output_path);
+            }
 
             input_file.seek(header.offset);
             std::vector<std::byte> data;
@@ -295,9 +301,15 @@ void WADFile::parseCommandline(
                     input_file.read(data_size);
 
                     std::string data_string;
-                    input_file.read(data, data_size);
+                    input_file.read(data_string, data_size);
 
-                    // dont do anything with reference files
+                    std::error_code err;
+                    std::filesystem::create_symlink(data_string, output_path, err);
+
+                    if (err) {
+                        std::cout << err.message() << std::endl;
+                    }
+
                     continue;
                 };
 
@@ -314,8 +326,12 @@ void WADFile::parseCommandline(
                 };
             }
 
-            output_writer.write(reinterpret_cast<char*>(data.data()), data.size() * sizeof(data.front()));
-            output_writer.close();
+            if (header.compression != REFERENCE) {
+                std::ofstream output_writer;
+                output_writer.open(output_path, std::ios::out | std::ios::binary, std::ios::trunc);
+                output_writer.write(reinterpret_cast<char*>(data.data()), data.size() * sizeof(data.front()));
+                output_writer.close();
+            }
         }
     }
 }
