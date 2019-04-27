@@ -175,7 +175,7 @@ void WADFile::parseCommandline(
     else
     {
         std::cout << "Input is folder, parsing recursive!" << std::endl;
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(input.getValue()))
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(input.getValue(), std::filesystem::directory_options::follow_directory_symlink))
         {
             const auto extension = entry.path().extension();
             if (".wad" == extension || ".client" == extension)
