@@ -21,14 +21,14 @@ std::size_t writeData(void *ptr, const std::size_t size, const std::size_t nmemb
 std::string Downloader::downloadString(std::string& url) const {
     std::string responseString;
 
-    if (handles[0]) {
-        curl_easy_setopt(handles[0], CURLOPT_URL, url.c_str());
-        curl_easy_setopt(handles[0], CURLOPT_WRITEDATA, &responseString);
-        curl_easy_setopt(handles[0], CURLOPT_WRITEFUNCTION, writeString);
+    if (handle) {
+        curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(handle, CURLOPT_WRITEDATA, &responseString);
+        curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writeString);
 
         std::cout << "DOWNLOADING: " << url << std::endl;
 
-        const auto res = curl_easy_perform(handles[0]);
+        const auto res = curl_easy_perform(handle);
         if (res != CURLE_OK) {
             std::cout << "CURL ERROR: " << url << std::endl;
             std::cout << "CURL ERROR: " << curl_easy_strerror(res) << std::endl;
@@ -58,14 +58,14 @@ bool Downloader::downloadFile(std::string& url, std::filesystem::path& output) c
         return false;
     }
 
-    if (handles[0]) {
-        curl_easy_setopt(handles[0], CURLOPT_URL, url.c_str());
-        curl_easy_setopt(handles[0], CURLOPT_WRITEDATA, fp);
-        curl_easy_setopt(handles[0], CURLOPT_WRITEFUNCTION, writeData);
+    if (handle) {
+        curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(handle, CURLOPT_WRITEDATA, fp);
+        curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writeData);
 
         std::cout << "DOWNLOADING FILE: " << url << std::endl;
 
-        const auto res = curl_easy_perform(handles[0]);
+        const auto res = curl_easy_perform(handle);
         if (res != CURLE_OK) {
             std::cout << "CURL ERROR: " << url << std::endl;
             std::cout << "CURL ERROR: " << curl_easy_strerror(res) << std::endl;
@@ -102,29 +102,28 @@ void push_handle(CURL* handle, FILE* fp, std::string& url, std::filesystem::path
 
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, fp);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writeData);
+    curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
 }
 
 bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesystem::path>>& urls) const {
 
-    if(urls.empty())
+    if (urls.empty())
     {
         return true;
     }
 
-    FILE* fp[HANDLE_COUNT];
     auto running_handles = 0;
-
-    auto it = urls.begin();
-    for (auto i = 0; i < HANDLE_COUNT; i++)
+    for (auto& url_part : urls)
     {
-        push_handle(handles[i], fp[i], it->first, it->second);
-        curl_multi_add_handle(multi_handle, handles[i]);
+        auto& url = url_part.first;
+        auto& loc = url_part.second;
 
-        std::advance(it, 1);
-        if (it == urls.end())
-        {
-            break;
-        }
+        auto handle = curl_easy_init();
+        curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+
+        push_handle(handle, nullptr, url, loc);
+        curl_multi_add_handle(multi_handle, handle);
     }
 
     curl_multi_perform(multi_handle, &running_handles);
@@ -170,7 +169,7 @@ bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesyste
             return_code = select(maxfd + 1, &fdread, &fdwrite, &fdexcep, &timeout);
         }
 
-        if(return_code != -1)
+        if (return_code != -1)
         {
             curl_multi_perform(multi_handle, &running_handles);
         }
@@ -180,37 +179,12 @@ bool Downloader::downloadFiles(std::vector<std::pair<std::string, std::filesyste
 
         while ((msg = curl_multi_info_read(multi_handle, &msg_count)))
         {
+
             if (msg->msg == CURLMSG_DONE)
             {
-                auto index = 0;
-                for (; index < HANDLE_COUNT; index++) {
-                    if (msg->easy_handle == handles[index])
-                    {
-                        break;
-                    }
-                }
-
+                std::cout << curl_easy_strerror(msg->data.result) << "(" << msg->data.result << ") - ";
                 std::cout << "Download finished (" << running_handles << " active transfers remaining)" << std::endl;
-                if (it != urls.end())
-                {
-                    std::advance(it, 1);
-                }
-
-                if (it == urls.end())
-                {
-                    break;
-                }
-
-                fclose(fp[index]);
-
-                push_handle(handles[index], fp[index], it->first, it->second);
-
-                // re-adding the handle is needed for it to pick-up the changed state
-                curl_multi_remove_handle(multi_handle, handles[index]);
-                curl_multi_add_handle(multi_handle, handles[index]);
-
-                // update running count
-                curl_multi_perform(multi_handle, &running_handles);
+                break;
             }
         }
     }
