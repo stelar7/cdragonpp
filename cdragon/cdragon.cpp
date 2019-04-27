@@ -94,9 +94,8 @@ int main(const int argc, char** argv)
                 WADFile::parseCommandline(wad_input, wad_output, wad_pattern, wad_unknown, wad_lazy, wad_list, hash_files);
             }
 
+            system("pause");
 
-            std::cout << "Program ended, press any key to exit" << std::endl;
-            std::cin.get();
         }
         catch (ArgException& e)
         {
