@@ -262,14 +262,12 @@ void WADFile::parseCommandline(
             }
 
 
-            std::error_code err;
             std::filesystem::file_status status;
-
             if (std::filesystem::is_symlink(output_path)) {
                 status = std::filesystem::symlink_status(output_path);
             }
             else {
-                status = std::filesystem::status(output_path, err);
+                status = std::filesystem::status(output_path);
             }
 
             if (std::filesystem::exists(status))
@@ -307,15 +305,18 @@ void WADFile::parseCommandline(
                     std::filesystem::create_symlink(data_string, output_path, err);
 
                     if (err) {
-                        std::cout << err.message() << std::endl;
+                        std::cout << "Failed to create symlink for file; FROM: " << output_path << " TO: " << data_string << "\n";
+                        std::cout << "Please run this code as admin to generate the files. Otherwise feel free to ignore this message." << std::endl;
                     }
-
-                    continue;
+                    
+                    break;
                 };
 
                 case ZSTD: {
                     std::vector<std::byte> compressed;
-                    input_file.read(data, header.compressedSize);
+                    input_file.read(compressed, header.compressedSize);
+
+                    data.resize(header.uncompressedSize);
                     zstd.decompress(compressed, data);
                     break;
                 };

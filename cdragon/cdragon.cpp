@@ -75,14 +75,13 @@ int main(const int argc, char** argv)
 
             std::vector<std::string> test2 = {
                 "cdragon", "-w",
-                "--wad-input", R"(C:\Users\Steffen\Desktop\test\DATA\FINAL\Champions\)",
+                "--wad-input", R"(D:\cdragon)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\game.json)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\lcu.json)",
-                "--wad-output", R"(C:\Users\Steffen\Desktop\test\output)",
-                "--wad-pattern", "skin11",
+                "--wad-output", R"(D:\generated_folder)",
             };
 
-            //cmd.parse(test);
+            //cmd.parse(test2);
 
             if (rman.isSet())
             {
