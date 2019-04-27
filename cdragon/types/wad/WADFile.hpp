@@ -111,7 +111,8 @@ namespace cdragon {
                 TCLAP::ValueArg<std::string>& unknown,
                 TCLAP::SwitchArg& lazy,
                 TCLAP::SwitchArg& list,
-                std::vector<std::string>& hash_files
+                std::vector<std::string>& hash_files,
+                TCLAP::ValueArg<std::string>& wad_hash_output
             );
 
             bool operator!() const

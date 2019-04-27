@@ -27,6 +27,7 @@ int main(const int argc, char** argv)
             SwitchArg wad("w", "wad", "enable wad parsing", false);
             ValueArg<std::string> wad_input("", "wad-input", "WAD file to extract", false, "", "string", cmd);
             ValueArg<std::string> wad_output("", "wad-output", "WAD content output directory", false, storage.getValue() + "/wad", "string", cmd);
+            ValueArg<std::string> wad_hash_output("", "wad-hash-output", "File to append hashes to", false, storage.getValue() + "/wad/hashes.txt", "string", cmd);
             SwitchArg wad_output_disable("", "wad-output-disable", "Disable wad output", false, cmd);
             ValueArg<std::string> wad_pattern("", "wad-pattern", "Extract only files matching regex pattern", false, "", "string", cmd);
             std::vector<std::string> unknown_options = { "yes", "no", "only" };
@@ -79,8 +80,9 @@ int main(const int argc, char** argv)
                 "--wad-input", R"(D:\cdragon)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\game.json)",
                 "--wad-hashes", R"(C:\Dropbox\Private\workspace\cdragon\src\main\resources\hashes\wad\lcu.json)",
-                "--wad-output-disable",
                 "--wad-output", R"(D:\generated_folder)",
+                "--wad-output-disable",
+                "--wad-hash-output", R"(D:\generated_folder\hashes.txt)",
             };
 
             //cmd.parse(test2);
@@ -93,7 +95,7 @@ int main(const int argc, char** argv)
             if (wad.isSet())
             {
                 auto hash_files = wad_hashes.getValue();
-                WADFile::parseCommandline(wad_input, wad_output, wad_output_disable, wad_pattern, wad_unknown, wad_lazy, wad_list, hash_files);
+                WADFile::parseCommandline(wad_input, wad_output, wad_output_disable, wad_pattern, wad_unknown, wad_lazy, wad_list, hash_files, wad_hash_output);
             }
 
             system("pause");

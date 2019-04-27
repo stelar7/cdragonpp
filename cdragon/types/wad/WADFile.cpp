@@ -116,6 +116,32 @@ std::string WADContentHeader::v1::hashAsHex() const
     return ss.str();
 }
 
+int32_t findFirstDivisorOverTenPercent(int32_t value) {
+    std::vector<int32_t> v;
+    for (int i = 1; i <= sqrt(value); i++)
+    {
+        if (value % i == 0)
+        {
+            if (value / i == i)
+                v.push_back(i);
+            else
+            {
+                v.push_back(i);
+                v.push_back(value / i);
+            }
+        }
+    }
+
+    std::sort(v.begin(), v.end());
+
+    for (auto& val : v) {
+        if (val > (value / 10)) return val;
+    }
+
+    return 10;
+
+}
+
 void WADFile::parseCommandline(
     TCLAP::ValueArg<std::string>& input,
     TCLAP::ValueArg<std::string>& output,
@@ -124,7 +150,8 @@ void WADFile::parseCommandline(
     TCLAP::ValueArg<std::string>& unknown,
     TCLAP::SwitchArg& lazy,
     TCLAP::SwitchArg& list,
-    std::vector<std::string>& hash_files
+    std::vector<std::string>& hash_files,
+    TCLAP::ValueArg<std::string>& wad_hash_output
 )
 {
     if (!output.isSet())
@@ -201,10 +228,24 @@ void WADFile::parseCommandline(
         crypto::ZSTDHandler zstd;
         crypto::GZIPHandler gzip;
 
-        int count = 0;
+        int32_t count = 0;
         auto symlink_error_printed = false;
-        auto interval = static_cast<std::int32_t>(wad.content.size() / 10);
+
+        int32_t interval = findFirstDivisorOverTenPercent(static_cast<int32_t>(wad.content.size()));
         std::cout << "Found " << wad.content.size() << " files before filtering!" << std::endl;
+
+        std::ofstream hash_writer;
+        if (wad_hash_output.isSet()) {
+
+            std::filesystem::path hash_path = wad_hash_output.getValue();
+            if (!std::filesystem::exists(hash_path.parent_path()))
+            {
+                std::filesystem::create_directories(hash_path.parent_path());
+            }
+
+            hash_writer.open(wad_hash_output.getValue(), std::ios::out | std::ios::binary | std::ios::app);
+        }
+
         for (auto& header : wad.content)
         {
             if (wad.content.size() > 1500 && ((++count) % interval) == 0)
@@ -241,6 +282,13 @@ void WADFile::parseCommandline(
                 {
                     continue;
                 }
+            }
+
+            if (wad_hash_output.isSet()) {
+                auto hash_filename = (search == hashes.end() ? "?" : search->second);
+
+                auto hash_line = header.hashAsHex() + " " + hash_filename + "\n";
+                hash_writer << hash_line;
             }
 
             if (list.getValue())
@@ -345,6 +393,10 @@ void WADFile::parseCommandline(
                 output_writer.write(reinterpret_cast<char*>(data.data()), data.size() * sizeof(data.front()));
                 output_writer.close();
             }
+        }
+
+        if (wad_hash_output.isSet()) {
+            hash_writer.close();
         }
     }
 }
