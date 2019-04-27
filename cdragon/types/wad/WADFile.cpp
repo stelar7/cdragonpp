@@ -195,6 +195,7 @@ void WADFile::parseCommandline(
         crypto::GZIPHandler gzip;
 
         auto count = 0;
+        auto symlink_error_printed = false;
         auto interval = static_cast<std::int32_t>(floor(wad.content.size() / 10));
         std::cout << "Found " << wad.content.size() << " files before filtering!" << std::endl;
         for (auto& header : wad.content)
@@ -305,10 +306,14 @@ void WADFile::parseCommandline(
                     std::filesystem::create_symlink(data_string, output_path, err);
 
                     if (err) {
-                        std::cout << "Failed to create symlink for file; FROM: " << output_path << " TO: " << data_string << "\n";
-                        std::cout << "Please run this code as admin to generate the files. Otherwise feel free to ignore this message." << std::endl;
+                        if (!symlink_error_printed) {
+                            std::cout << "Failed to create symlink for files.\n";
+                            std::cout << "Please run this code as admin to generate them.\n";
+                            std::cout << "Otherwise feel free to ignore this message." << std::endl;
+                            symlink_error_printed = true;
+                        }
                     }
-                    
+
                     break;
                 };
 
