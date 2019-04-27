@@ -23,12 +23,22 @@ namespace cdragon {
             ZSTD = 3
         };
 
+        inline const std::string WADtoString(WADCompressionType& type) {
+            switch (type) {
+                case NONE:  return "None";
+                case GZIP:  return "GZIP";
+                case REFERENCE:  return "REF";
+                case ZSTD:  return "ZSTD";
+                default: "NOT SPECIFIED IN TOSTRING!";
+            }
+        }
+
         class WADHeader {
         public:
             WADHeader() :magic{ 0,0 }, major(0), minor(0) {}
 
             struct v1 {
-                v1() : entryOffset(0), entryCellSize(0), entryCount(0){};
+                v1() : entryOffset(0), entryCellSize(0), entryCount(0) {};
                 std::int16_t entryOffset;
                 std::int16_t entryCellSize;
                 std::int32_t entryCount;

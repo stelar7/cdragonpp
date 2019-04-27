@@ -239,7 +239,7 @@ void WADFile::parseCommandline(
 
             if (list.getValue())
             {
-                std::cout << output_filename << std::endl;
+                std::cout << WADtoString(header.compression) << " " << output_filename << std::endl;
             }
 
             if (!output.isSet())
@@ -295,9 +295,10 @@ void WADFile::parseCommandline(
                     input_file.read(data_size);
 
                     std::string data_string;
-                    input_file.read(data_string, data_size);
-                    std::transform(data_string.begin(), data_string.end(), data.begin(), [](char c) {return std::byte(c); });
-                    break;
+                    input_file.read(data, data_size);
+
+                    // dont do anything with reference files
+                    continue;
                 };
 
                 case ZSTD: {
