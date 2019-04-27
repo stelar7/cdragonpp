@@ -106,6 +106,7 @@ namespace cdragon {
             static void parseCommandline(
                 TCLAP::ValueArg<std::string>& input,
                 TCLAP::ValueArg<std::string>& output,
+                TCLAP::SwitchArg& output_disabled,
                 TCLAP::ValueArg<std::string>& pattern,
                 TCLAP::ValueArg<std::string>& unknown,
                 TCLAP::SwitchArg& lazy,

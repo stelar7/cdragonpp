@@ -119,6 +119,7 @@ std::string WADContentHeader::v1::hashAsHex() const
 void WADFile::parseCommandline(
     TCLAP::ValueArg<std::string>& input,
     TCLAP::ValueArg<std::string>& output,
+    TCLAP::SwitchArg& output_disabled,
     TCLAP::ValueArg<std::string>& pattern,
     TCLAP::ValueArg<std::string>& unknown,
     TCLAP::SwitchArg& lazy,
@@ -208,7 +209,7 @@ void WADFile::parseCommandline(
         {
             if (wad.content.size() > 1500 && ((++count) % interval) == 0)
             {
-                int percentage = ceil((static_cast<float>(count) / static_cast<float>(wad.content.size())) * 100.0);
+                auto percentage = static_cast<int32_t>(ceil((static_cast<float_t>(count) / static_cast<float_t>(wad.content.size())) * 100.0));
                 std::cout << percentage << "% " << count << "/" << wad.content.size() << std::endl;
             }
 
@@ -245,6 +246,10 @@ void WADFile::parseCommandline(
             if (list.getValue())
             {
                 std::cout << WADtoString(header.compression) << " " << output_filename << std::endl;
+            }
+
+            if (output_disabled.getValue()) {
+                continue;
             }
 
             auto output_path = std::filesystem::path(output.getValue());
