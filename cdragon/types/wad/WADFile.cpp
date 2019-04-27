@@ -126,9 +126,15 @@ void WADFile::parseCommandline(
     std::vector<std::string>& hash_files
 )
 {
+    if (!output.isSet())
+    {
+        auto output_path = std::filesystem::absolute(std::filesystem::path(output.getValue()));
+        std::cout << "No output folder is set, using default! (" << output_path << ")" << std::endl;
+    }
+
     if (!input.isSet())
     {
-        std::cout << "ERROR: " << "Missing input file!" << std::endl;
+        std::cout << "ERROR: " << "Missing input file(s)!" << std::endl;
         exit(0);
     }
 
@@ -194,15 +200,16 @@ void WADFile::parseCommandline(
         crypto::ZSTDHandler zstd;
         crypto::GZIPHandler gzip;
 
-        auto count = 0;
+        int count = 0;
         auto symlink_error_printed = false;
-        auto interval = static_cast<std::int32_t>(floor(wad.content.size() / 10));
+        auto interval = static_cast<std::int32_t>(wad.content.size() / 10);
         std::cout << "Found " << wad.content.size() << " files before filtering!" << std::endl;
         for (auto& header : wad.content)
         {
             if (wad.content.size() > 1500 && ((++count) % interval) == 0)
             {
-                std::cout << count << "/" << wad.content.size() << std::endl;
+                int percentage = ceil((static_cast<float>(count) / static_cast<float>(wad.content.size())) * 100.0);
+                std::cout << percentage << "% " << count << "/" << wad.content.size() << std::endl;
             }
 
             auto hash = header.pathHash;
@@ -240,14 +247,9 @@ void WADFile::parseCommandline(
                 std::cout << WADtoString(header.compression) << " " << output_filename << std::endl;
             }
 
-            if (!output.isSet())
-            {
-                continue;
-            }
-
             auto output_path = std::filesystem::path(output.getValue());
             output_path /= output_filename;
-            output_path.make_preferred();
+            output_path = std::filesystem::absolute(output_path.make_preferred());
 
             if (lazy.isSet()) {
                 if (std::filesystem::exists(output_path))
