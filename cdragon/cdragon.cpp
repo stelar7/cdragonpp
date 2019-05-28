@@ -97,9 +97,6 @@ int main(const int argc, char** argv)
                 auto hash_files = wad_hashes.getValue();
                 WADFile::parseCommandline(wad_input, wad_output, wad_output_disable, wad_pattern, wad_unknown, wad_lazy, wad_list, hash_files, wad_hash_output);
             }
-
-            system("pause");
-
         }
         catch (ArgException& e)
         {
